@@ -14,6 +14,7 @@ datasource db {
 model User {
   id           String      @id @default(cuid())
   phone        String      @unique
+  name         String?     // Optional name for personalization
   role         UserRole    @default(WORKER)
   settlementId String?     // Optional for system-wide admins
   settlement   Settlement? @relation(fields: [settlementId], references: [id])
@@ -72,18 +73,19 @@ model CampaignSettlement {
 
 // Image model - URLs from CSV uploads
 model Image {
-  id               String     @id @default(cuid())
+  id               String      @id @default(cuid())
   url              String
   campaignId       String
-  campaign         Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign         Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   responses        Response[]
-  groundTruth      Boolean?   // null until consensus is reached
-  consensusReached Boolean    @default(false)
-  totalResponses   Int        @default(0)
-  yesCount         Int        @default(0)
-  noCount          Int        @default(0)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  groundTruth      Boolean?    // null until consensus is reached
+  status           ImageStatus @default(PENDING)
+  consensusReached Boolean     @default(false)
+  totalResponses   Int         @default(0)
+  yesCount         Int         @default(0)
+  noCount          Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@map("images")
 }
@@ -145,4 +147,10 @@ enum NewsPriority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum ImageStatus {
+  PENDING    // Waiting for responses
+  ACTIVE     // Currently being worked on
+  COMPLETE   // Consensus reached
 }

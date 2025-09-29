@@ -2,6 +2,7 @@
 export interface User {
   id: string;
   phone: string;
+  name?: string; // Optional name for personalization
   role: 'WORKER' | 'ADMIN';
   settlementId?: string; // Optional for system-wide admins
   settlement?: Settlement;
@@ -42,6 +43,7 @@ export interface Image {
   campaign?: Campaign;
   responses?: Response[];
   groundTruth?: boolean;
+  status: 'PENDING' | 'ACTIVE' | 'COMPLETE';
   consensusReached: boolean;
   totalResponses: number;
   yesCount: number;
@@ -92,6 +94,7 @@ export interface LoginRequest {
 export interface AuthUser {
   id: string;
   phone: string;
+  name?: string; // Optional name for personalization
   role: 'WORKER' | 'ADMIN';
   settlementId?: string; // Optional for system-wide admins
   settlementName?: string; // Optional for system-wide admins

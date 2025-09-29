@@ -58,8 +58,11 @@ export function isValidKenyanPhone(phone: string): boolean {
 export function calculatePayment(tasksCompleted: number, accuracyScore: number): PaymentCalculation {
   const basePay = tasksCompleted >= APP_CONFIG.DAILY_TASK_TARGET ? APP_CONFIG.PAYMENT.BASE_PAY_KES : 0;
   
+  // Sort tiers by minAccuracy in descending order for optimal performance
+  const sortedTiers = [...APP_CONFIG.PAYMENT.TIERS].sort((a, b) => b.minAccuracy - a.minAccuracy);
+  
   // Find the appropriate payment tier
-  const tier = APP_CONFIG.PAYMENT.TIERS.find(
+  const tier = sortedTiers.find(
     t => accuracyScore >= t.minAccuracy && accuracyScore <= t.maxAccuracy
   ) || APP_CONFIG.PAYMENT.TIERS[APP_CONFIG.PAYMENT.TIERS.length - 1];
   
