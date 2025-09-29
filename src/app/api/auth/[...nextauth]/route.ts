@@ -72,6 +72,7 @@ const handler = NextAuth({
           // Return user data for session
           return {
             id: user.id,
+            name: user.name || `User ${user.phone}`,
             phone: user.phone,
             role: user.role,
             settlementId: user.settlementId,
@@ -100,6 +101,7 @@ const handler = NextAuth({
               
               return {
                 id: mockUser.phone,
+                name: `Demo ${mockUser.role}`,
                 phone: mockUser.phone,
                 role: mockUser.role as 'WORKER' | 'ADMIN',
                 settlementId: mockUser.settlementId,
@@ -118,6 +120,7 @@ const handler = NextAuth({
       // Persist user data in JWT token
       if (user) {
         token.id = user.id;
+        token.name = (user as AuthUser).name;
         token.phone = (user as AuthUser).phone;
         token.role = (user as AuthUser).role;
         token.settlementId = (user as AuthUser).settlementId;
@@ -129,6 +132,7 @@ const handler = NextAuth({
       // Send properties to the client
       session.user = {
         id: token.id as string,
+        name: token.name as string,
         phone: token.phone as string,
         role: token.role as 'WORKER' | 'ADMIN',
         settlementId: token.settlementId as string | undefined,
@@ -138,8 +142,8 @@ const handler = NextAuth({
     },
   },
   pages: {
-    signIn: '/auth/login',
-    error: '/auth/error',
+    signIn: '/login',
+    error: '/login?error=auth',
   },
   session: {
     strategy: 'jwt',

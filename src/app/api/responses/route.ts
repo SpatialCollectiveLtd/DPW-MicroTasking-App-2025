@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user's settlement is assigned to this campaign
     const isSettlementAssigned = image.campaign.settlements.some(
-      cs => cs.settlementId === user.settlementId
+      (cs: any) => cs.settlementId === user.settlementId
     );
 
     if (!isSettlementAssigned) {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update image statistics in a transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       const updatedImage = await tx.image.update({
         where: { id: imageId },
         data: {
@@ -199,7 +199,7 @@ export async function GET() {
       success: true,
       data: {
         todayCount: todayResponses.length,
-        responses: todayResponses.map(r => ({
+        responses: todayResponses.map((r: any) => ({
           id: r.id,
           answer: r.answer,
           submittedAt: r.submittedAt,
