@@ -31,15 +31,25 @@ async function main() {
   );
   console.log(`✅ Created ${settlements.length} settlements`);
 
-  // Create admin user
-  const adminUser = await prisma.user.create({
+  // Create system admin user (no settlement restriction)
+  const systemAdmin = await prisma.user.create({
     data: {
       phone: '+254701234567',
       role: UserRole.ADMIN,
-      settlementId: settlements[0].id, // Admins need a settlement assignment
+      // No settlementId - system-wide admin
     },
   });
-  console.log('👤 Created admin user');
+
+  // Create settlement-specific admin
+  const settlementAdmin = await prisma.user.create({
+    data: {
+      phone: '+254702345678',
+      role: UserRole.ADMIN,
+      settlementId: settlements[0].id, // Mji wa Huruma admin
+    },
+  });
+  
+  console.log('👤 Created admin users (system + settlement-specific)');
 
   // Create sample worker users
   const workers = await Promise.all([
@@ -75,7 +85,7 @@ async function main() {
           title: `Infrastructure Assessment ${index + 1}`,
           question,
           isActive: index === 0, // Only first campaign is active
-          createdBy: adminUser.id,
+          createdBy: systemAdmin.id,
           startDate: new Date(),
           endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         },
@@ -141,8 +151,8 @@ async function main() {
       where: { imageId: image.id },
     });
 
-    const yesCount = responses.filter(r => r.answer === true).length;
-    const noCount = responses.filter(r => r.answer === false).length;
+    const yesCount = responses.filter((r: any) => r.answer === true).length;
+    const noCount = responses.filter((r: any) => r.answer === false).length;
 
     await prisma.image.update({
       where: { id: image.id },
@@ -162,7 +172,7 @@ async function main() {
         title: 'Welcome to the DPW Platform!',
         content: 'Complete your daily tasks to earn KES 760 base pay plus quality bonuses.',
         priority: NewsPriority.HIGH,
-        createdBy: adminUser.id,
+        createdBy: systemAdmin.id,
       },
     }),
     prisma.news.create({
@@ -170,7 +180,7 @@ async function main() {
         title: 'Payment Schedule Update',
         content: 'Payments are processed weekly every Friday. Check your earnings in the app.',
         priority: NewsPriority.MEDIUM,
-        createdBy: adminUser.id,
+        createdBy: systemAdmin.id,
       },
     }),
     prisma.news.create({
@@ -178,7 +188,7 @@ async function main() {
         title: 'New Task Campaign Available',
         content: 'A new infrastructure assessment campaign is now live. Happy tasking!',
         priority: NewsPriority.LOW,
-        createdBy: adminUser.id,
+        createdBy: systemAdmin.id,
       },
     }),
   ]);
@@ -186,7 +196,8 @@ async function main() {
 
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📝 Sample credentials:');
-  console.log('Admin: +254701234567 (any settlement)');
+  console.log('System Admin: +254701234567 (system-wide access)');
+  console.log('Settlement Admin: +254702345678 (Mji wa Huruma)');
   console.log('Worker 1: +254712345678 (Mji wa Huruma)');
   console.log('Worker 2: +254723456789 (Kayole Soweto)');
   console.log('Worker 3: +254734567890 (Kariobangi)');

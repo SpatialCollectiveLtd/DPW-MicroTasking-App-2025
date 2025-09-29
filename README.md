@@ -26,9 +26,9 @@ The DPW Micro-Tasking Platform provides short-term digital work opportunities fo
 - **Frontend**: Next.js 14 with App Router, TypeScript, Tailwind CSS v4
 - **Backend**: Next.js API Routes (Full-Stack Architecture)
 - **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT-based with phone number verification
+- **Authentication**: NextAuth.js with phone number verification
 - **State Management**: Zustand for client-side state
-- **UI Components**: Headless UI + Custom components
+- **UI Components**: Shadcn/UI + Radix UI primitives
 - **Development**: Docker Compose for local PostgreSQL
 
 ### Design Philosophy
@@ -152,7 +152,7 @@ The application includes seed data with:
 - 3 settlements from Nairobi and Machakos
 - Sample 360° panoramic images from Wikimedia Commons
 - Infrastructure assessment questions
-- Test user accounts for development
+- Test user accounts (system admin + settlement admin + workers)
 
 ## 🛠️ Development Scripts
 

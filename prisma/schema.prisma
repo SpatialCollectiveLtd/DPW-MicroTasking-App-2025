@@ -12,13 +12,13 @@ datasource db {
 
 // User model - handles both Workers and Admins
 model User {
-  id           String   @id @default(cuid())
-  phone        String   @unique
-  role         UserRole @default(WORKER)
-  settlementId String
-  settlement   Settlement @relation(fields: [settlementId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           String      @id @default(cuid())
+  phone        String      @unique
+  role         UserRole    @default(WORKER)
+  settlementId String?     // Optional for system-wide admins
+  settlement   Settlement? @relation(fields: [settlementId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   // Worker-specific relations
   responses    Response[]

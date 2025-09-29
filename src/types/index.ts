@@ -3,7 +3,7 @@ export interface User {
   id: string;
   phone: string;
   role: 'WORKER' | 'ADMIN';
-  settlementId: string;
+  settlementId?: string; // Optional for system-wide admins
   settlement?: Settlement;
   createdAt: Date;
   updatedAt: Date;
@@ -76,7 +76,7 @@ export interface DailyReport {
 }
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -93,8 +93,8 @@ export interface AuthUser {
   id: string;
   phone: string;
   role: 'WORKER' | 'ADMIN';
-  settlementId: string;
-  settlementName: string;
+  settlementId?: string; // Optional for system-wide admins
+  settlementName?: string; // Optional for system-wide admins
 }
 
 // Task types
