@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - handles both Workers and Admins
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  role         UserRole @default(WORKER)
+  settlementId String
+  settlement   Settlement @relation(fields: [settlementId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Worker-specific relations
+  responses    Response[]
+  dailyReports DailyReport[]
+
+  @@map("users")
+}
+
+// Settlement model - geographic assignments
+model Settlement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  location    String?
+  users       User[]
+  campaigns   CampaignSettlement[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("settlements")
+}
+
+// Campaign model - task collections with questions
+model Campaign {
+  id          String     @id @default(cuid())
+  title       String
+  question    String
+  isActive    Boolean    @default(true)
+  startDate   DateTime   @default(now())
+  endDate     DateTime?
+  createdBy   String     // User ID of admin who created it
+  images      Image[]
+  settlements CampaignSettlement[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("campaigns")
+}
+
+// Junction table for Campaign-Settlement many-to-many relationship
+model CampaignSettlement {
+  id           String     @id @default(cuid())
+  campaignId   String
+  settlementId String
+  campaign     Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  settlement   Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([campaignId, settlementId])
+  @@map("campaign_settlements")
+}
+
+// Image model - URLs from CSV uploads
+model Image {
+  id               String     @id @default(cuid())
+  url              String
+  campaignId       String
+  campaign         Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  responses        Response[]
+  groundTruth      Boolean?   // null until consensus is reached
+  consensusReached Boolean    @default(false)
+  totalResponses   Int        @default(0)
+  yesCount         Int        @default(0)
+  noCount          Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@map("images")
+}
+
+// Response model - worker answers to images
+model Response {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageId     String
+  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  answer      Boolean  // true for Yes, false for No
+  submittedAt DateTime @default(now())
+
+  @@unique([userId, imageId]) // Prevent duplicate responses from same user for same image
+  @@map("responses")
+}
+
+// DailyReport model - payment calculations and analytics
+model DailyReport {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime @db.Date
+  tasksCompleted Int      @default(0)
+  targetTasks    Int      @default(300)
+  accuracyScore  Float    @default(0) // percentage (0-100)
+  basePay        Float    @default(0) // in KES
+  qualityBonus   Float    @default(0) // in KES
+  totalPay       Float    @default(0) // in KES
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, date]) // One report per user per day
+  @@map("daily_reports")
+}
+
+// News model - admin announcements
+model News {
+  id        String      @id @default(cuid())
+  title     String
+  content   String
+  priority  NewsPriority @default(MEDIUM)
+  isActive  Boolean     @default(true)
+  createdBy String      // User ID of admin who created it
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("news")
+}
+
+// Enums
+enum UserRole {
+  WORKER
+  ADMIN
+}
+
+enum NewsPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
