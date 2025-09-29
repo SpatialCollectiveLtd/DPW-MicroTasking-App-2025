@@ -3,13 +3,9 @@
 import { useState, useEffect } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
 import { isValidKenyanPhone } from '@/lib/utils';
-import Image from 'next/image';
 
 interface Settlement {
   id: string;
@@ -124,142 +120,117 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background gradient/pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0A0A0B] via-[#1A1A1B] to-[#2A2A2B]" />
-      
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="h-full w-full" style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4">
+      <div className="w-full max-w-sm">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-black mb-3">
+            Sign in to access your dashboard
+          </h1>
+          <p className="text-gray-700 text-base">Enter your phone number and select your settlement</p>
+        </div>
 
-      {/* Main content container */}
-      <div className="relative z-10 w-full max-w-md space-y-8">
-        {/* Logo Section */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="w-48 h-28 bg-[#2D2D2D] rounded-lg flex flex-col items-center justify-center">
-              <div className="text-white text-3xl font-black mb-2">DPW</div>
-              <div className="text-white text-[8px] font-semibold tracking-widest">
-                DIGITAL PUBLIC WORKS FOR URBAN RESILIENCE
+        {/* Form Container */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Phone Number Field */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-semibold text-black mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
+                <input
+                  id="phone"
+                  type="tel"
+                  placeholder="+254701234567"
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  disabled={isLoading}
+                  className="w-full pl-12 pr-4 py-4 h-14 text-base bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:bg-white focus:outline-none transition-all duration-200 placeholder:text-gray-400"
+                />
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Welcome Text */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome <span className="text-[#8B5CF6]">back</span>
-          </h1>
-        </div>
-
-        {/* Login Form */}
-        <div className="space-y-6">
-          {/* Phone Number Input */}
-          <div className="space-y-2">
-            <div className="relative">
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+254701234567"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                className="w-full h-14 px-4 text-white text-base bg-[#1A1A1B] border border-[#2A2A2B] rounded-xl focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 transition-all duration-200 placeholder:text-gray-500"
-                disabled={isLoading}
-              />
-              <Phone className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-
-          {/* Settlement Selection */}
-          <div className="space-y-2">
-            <Select
-              value={formData.settlementId}
-              onValueChange={handleSettlementChange}
-              disabled={isLoading || isLoadingSettlements}
-            >
-              <SelectTrigger className="w-full h-14 px-4 text-white bg-[#1A1A1B] border border-[#2A2A2B] rounded-xl focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 transition-all duration-200">
-                <div className="flex items-center justify-between w-full">
-                  <SelectValue 
-                    placeholder="Choose your settlement..." 
-                    className="text-gray-500"
-                  />
-                  <MapPin className="h-5 w-5 text-gray-400" />
+            {/* Settlement Field */}
+            <div>
+              <label htmlFor="settlement" className="block text-sm font-semibold text-black mb-2">
+                Settlement
+              </label>
+              <Select
+                value={formData.settlementId}
+                onValueChange={handleSettlementChange}
+                disabled={isLoading || isLoadingSettlements}
+              >
+                <SelectTrigger className="w-full h-14 px-4 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:bg-white text-base">
+                  <div className="flex items-center">
+                    <MapPin className="h-5 w-5 text-gray-400 mr-3" />
+                    <SelectValue placeholder="Choose your settlement..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-white border-2 border-gray-200 rounded-2xl shadow-2xl">
+                  {settlements.map((settlement) => (
+                    <SelectItem 
+                      key={settlement.id} 
+                      value={settlement.id}
+                      className="py-3 px-4 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <div>
+                        <div className="font-medium text-black">{settlement.name}</div>
+                        {settlement.location && (
+                          <div className="text-sm text-gray-500">{settlement.location}</div>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isLoadingSettlements && (
+                <div className="flex items-center mt-2 text-sm text-gray-600">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading settlements...
                 </div>
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A1B] border border-[#2A2A2B] rounded-xl">
-                {settlements.map((settlement) => (
-                  <SelectItem 
-                    key={settlement.id} 
-                    value={settlement.id}
-                    className="text-white hover:bg-[#2A2A2B] focus:bg-[#2A2A2B] py-3 px-4"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{settlement.name}</span>
-                      {settlement.location && (
-                        <span className="text-sm text-gray-400">{settlement.location}</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isLoadingSettlements && (
-              <div className="flex items-center text-sm text-gray-400 mt-2">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Loading settlements...
+              )}
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                <p className="text-sm font-medium text-red-800">{error}</p>
               </div>
             )}
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
-              <p className="text-sm text-red-300">{error}</p>
-            </div>
-          )}
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || isLoadingSettlements}
+              className="w-full h-14 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-red-500/20"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Signing in...
+                </div>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+        </div>
 
-          {/* Terms text */}
-          <div className="text-center text-sm text-gray-400 py-4">
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-gray-600 text-sm">
             By continuing, you agree to DPW's{' '}
-            <span className="text-white underline cursor-pointer hover:text-[#8B5CF6] transition-colors">
+            <span className="text-red-500 hover:text-red-600 cursor-pointer underline font-medium">
               Terms of Use
             </span>{' '}
             &{' '}
-            <span className="text-white underline cursor-pointer hover:text-[#8B5CF6] transition-colors">
+            <span className="text-red-500 hover:text-red-600 cursor-pointer underline font-medium">
               Privacy Policy
             </span>
-          </div>
-
-          {/* Login Button */}
-          <Button
-            onClick={handleSubmit}
-            className="w-full h-14 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold text-base rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-            disabled={isLoading || isLoadingSettlements}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Signing in...
-              </>
-            ) : (
-              'Log in'
-            )}
-          </Button>
-
-          {/* Forgot password link */}
-          <div className="text-center pt-4">
-            <button className="text-gray-400 hover:text-white text-sm transition-colors">
-              Forgot your password?
-            </button>
-          </div>
+          </p>
         </div>
       </div>
     </div>
