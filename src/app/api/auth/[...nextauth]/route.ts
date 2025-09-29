@@ -79,6 +79,35 @@ const handler = NextAuth({
           } as AuthUser;
         } catch (error) {
           console.error('Authentication error:', error);
+          
+          // Development fallback for demo purposes when database is not accessible
+          if (process.env.NODE_ENV === 'development') {
+            // Mock users for testing
+            const mockUsers = [
+              { phone: '+254701234567', role: 'ADMIN', settlementId: null, settlementName: null },
+              { phone: '+254702345678', role: 'ADMIN', settlementId: '1', settlementName: 'Mji wa Huruma' },
+              { phone: '+254712345678', role: 'WORKER', settlementId: '1', settlementName: 'Mji wa Huruma' },
+              { phone: '+254723456789', role: 'WORKER', settlementId: '2', settlementName: 'Kayole Soweto' },
+              { phone: '+254734567890', role: 'WORKER', settlementId: '3', settlementName: 'Kariobangi' },
+            ];
+
+            const mockUser = mockUsers.find(u => u.phone === normalizedPhone);
+            if (mockUser) {
+              // Validate settlement for workers
+              if (mockUser.role === 'WORKER' && mockUser.settlementId !== credentials.settlementId) {
+                throw new Error('Selected settlement does not match your account');
+              }
+              
+              return {
+                id: mockUser.phone,
+                phone: mockUser.phone,
+                role: mockUser.role as 'WORKER' | 'ADMIN',
+                settlementId: mockUser.settlementId,
+                settlementName: mockUser.settlementName,
+              } as AuthUser;
+            }
+          }
+          
           throw error;
         }
       },
