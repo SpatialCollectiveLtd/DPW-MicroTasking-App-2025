@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Phone, MapPin } from 'lucide-react';
+import { Loader2, Phone, MapPin, ChevronDown } from 'lucide-react';
 import { isValidKenyanPhone } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +29,7 @@ export default function LoginPage() {
   const [isLoadingSettlements, setIsLoadingSettlements] = useState(true);
   const [error, setError] = useState('');
   const [shakeCard, setShakeCard] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Fetch settlements on component mount
   useEffect(() => {
@@ -121,16 +121,16 @@ export default function LoginPage() {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData(prev => ({ ...prev, phone: value }));
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
-  const handleSettlementChange = (value: string) => {
-    setFormData(prev => ({ ...prev, settlementId: value }));
-    // Clear error when user makes selection
+  const handleSettlementSelect = (settlementId: string) => {
+    setFormData(prev => ({ ...prev, settlementId }));
+    setIsDropdownOpen(false);
     if (error) setError('');
   };
 
+  const selectedSettlement = settlements.find(s => s.id === formData.settlementId);
   const isFormValid = formData.phone.trim() && formData.settlementId && !isLoadingSettlements;
 
   return (
@@ -140,7 +140,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div 
             className={cn(
-              "bg-white rounded-2xl shadow-lg border border-gray-100 p-8 transition-transform duration-300",
+              "bg-white rounded-lg shadow-lg border border-gray-200 p-8 transition-transform duration-300",
               shakeCard && "animate-[shake_0.5s_ease-in-out]"
             )}
           >
@@ -166,7 +166,7 @@ export default function LoginPage() {
                     value={formData.phone}
                     onChange={handlePhoneChange}
                     disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 placeholder:text-gray-400"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 placeholder:text-gray-400 text-black bg-white"
                   />
                 </div>
               </div>
@@ -178,31 +178,36 @@ export default function LoginPage() {
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-                  <Select
-                    value={formData.settlementId}
-                    onValueChange={handleSettlementChange}
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     disabled={isLoading || isLoadingSettlements}
+                    className={cn(
+                      "w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 bg-white text-left",
+                      selectedSettlement ? "text-black" : "text-gray-400"
+                    )}
                   >
-                    <SelectTrigger className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 bg-white">
-                      <SelectValue placeholder="Choose your settlement..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-lg shadow-lg">
+                    {selectedSettlement ? selectedSettlement.name : "Choose your settlement..."}
+                  </button>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {settlements.map((settlement) => (
-                        <SelectItem 
-                          key={settlement.id} 
-                          value={settlement.id}
-                          className="py-3 px-4 hover:bg-gray-50 cursor-pointer"
+                        <button
+                          key={settlement.id}
+                          type="button"
+                          onClick={() => handleSettlementSelect(settlement.id)}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg"
                         >
-                          <div>
-                            <div className="font-medium text-black">{settlement.name}</div>
-                            {settlement.location && (
-                              <div className="text-sm text-gray-500">{settlement.location}</div>
-                            )}
-                          </div>
-                        </SelectItem>
+                          <div className="font-medium text-black">{settlement.name}</div>
+                          {settlement.location && (
+                            <div className="text-sm text-gray-500">{settlement.location}</div>
+                          )}
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
                 </div>
                 {isLoadingSettlements && (
                   <div className="flex items-center mt-2 text-sm text-gray-600">
@@ -223,7 +228,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={!isFormValid || isLoading}
-                className="w-full py-3 bg-[#EF4444] hover:bg-[#DC2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="w-full py-3 bg-[#EF4444] hover:bg-[#DC2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:ring-offset-2"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -270,7 +275,7 @@ export default function LoginPage() {
                     value={formData.phone}
                     onChange={handlePhoneChange}
                     disabled={isLoading}
-                    className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-600 text-white rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 placeholder:text-gray-400"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -282,31 +287,36 @@ export default function LoginPage() {
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-                  <Select
-                    value={formData.settlementId}
-                    onValueChange={handleSettlementChange}
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     disabled={isLoading || isLoadingSettlements}
+                    className={cn(
+                      "w-full pl-12 pr-12 py-4 bg-gray-800 border border-gray-600 rounded-xl focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 text-left",
+                      selectedSettlement ? "text-white" : "text-gray-400"
+                    )}
                   >
-                    <SelectTrigger className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-600 text-white rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200">
-                      <SelectValue placeholder="Choose your settlement..." className="text-gray-400" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl">
+                    {selectedSettlement ? selectedSettlement.name : "Choose your settlement..."}
+                  </button>
+                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
                       {settlements.map((settlement) => (
-                        <SelectItem 
-                          key={settlement.id} 
-                          value={settlement.id}
-                          className="py-3 px-4 hover:bg-gray-700 cursor-pointer text-white"
+                        <button
+                          key={settlement.id}
+                          type="button"
+                          onClick={() => handleSettlementSelect(settlement.id)}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl text-white"
                         >
-                          <div>
-                            <div className="font-medium text-white">{settlement.name}</div>
-                            {settlement.location && (
-                              <div className="text-sm text-gray-400">{settlement.location}</div>
-                            )}
-                          </div>
-                        </SelectItem>
+                          <div className="font-medium text-white">{settlement.name}</div>
+                          {settlement.location && (
+                            <div className="text-sm text-gray-400">{settlement.location}</div>
+                          )}
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
                 </div>
                 {isLoadingSettlements && (
                   <div className="flex items-center mt-3 text-sm text-gray-400">
@@ -327,7 +337,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={!isFormValid || isLoading}
-                className="w-full py-4 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900 mt-8"
+                className="w-full py-4 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900 mt-8"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -342,6 +352,14 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Overlay to close dropdown */}
+      {isDropdownOpen && (
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={() => setIsDropdownOpen(false)}
+        />
+      )}
 
       {/* Add shake animation styles */}
       <style jsx>{`
