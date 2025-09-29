@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ToggleLeft, ToggleRight, Eye, Focus } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, Eye, Focus, ArrowLeft } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Dynamically import the PhotoSphere component to avoid SSR issues
-const PhotoSphere = dynamic(() => import('react-photo-sphere-viewer'), { 
+const PhotoSphere = dynamic(() => import('react-photo-sphere-viewer').then(mod => ({ default: mod.ReactPhotoSphereViewer })), { 
   ssr: false,
   loading: () => (
     <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -45,6 +46,7 @@ export default function TasksPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('immersive');
   const [error, setError] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -105,11 +107,15 @@ export default function TasksPage() {
           // All images completed - redirect to completion page
           router.push('/dashboard/tasks/complete');
         } else {
-          // Move to next image
-          setTaskData(prev => prev ? {
-            ...prev,
-            currentImageIndex: nextIndex
-          } : null);
+          // Smooth transition to next image
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setTaskData(prev => prev ? {
+              ...prev,
+              currentImageIndex: nextIndex
+            } : null);
+            setIsTransitioning(false);
+          }, 300);
         }
       } else {
         setError(result.message || 'Failed to submit response');
@@ -173,128 +179,140 @@ export default function TasksPage() {
   const progress = ((taskData.currentImageIndex + 1) / taskData.totalImages) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-md mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back
+              </button>
+              
+              {/* View Toggle */}
+              <div className="flex items-center space-x-2">
+                <Eye className={`h-4 w-4 ${viewMode === 'immersive' ? 'text-[#EF4444]' : 'text-gray-400'}`} />
+                <button
+                  onClick={() => setViewMode(viewMode === 'immersive' ? 'focused' : 'immersive')}
+                  className="p-1"
+                >
+                  {viewMode === 'immersive' ? (
+                    <ToggleLeft className="h-6 w-6 text-[#EF4444]" />
+                  ) : (
+                    <ToggleRight className="h-6 w-6 text-[#EF4444]" />
+                  )}
+                </button>
+                <Focus className={`h-4 w-4 ${viewMode === 'focused' ? 'text-[#EF4444]' : 'text-gray-400'}`} />
+              </div>
+            </div>
+            
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{taskData.campaign.title}</h1>
+              <h1 className="text-lg font-bold text-gray-900">{taskData.campaign.title}</h1>
               <p className="text-sm text-gray-600">
                 Image {taskData.currentImageIndex + 1} of {taskData.totalImages}
               </p>
             </div>
             
-            {/* View Toggle */}
-            <div className="flex items-center space-x-2">
-              <Eye className={`h-5 w-5 ${viewMode === 'immersive' ? 'text-red-500' : 'text-gray-400'}`} />
-              <button
-                onClick={() => setViewMode(viewMode === 'immersive' ? 'focused' : 'immersive')}
-                className="p-1"
-              >
-                {viewMode === 'immersive' ? (
-                  <ToggleLeft className="h-8 w-8 text-red-500" />
-                ) : (
-                  <ToggleRight className="h-8 w-8 text-red-500" />
-                )}
-              </button>
-              <Focus className={`h-5 w-5 ${viewMode === 'focused' ? 'text-red-500' : 'text-gray-400'}`} />
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="bg-gray-200 rounded-full h-2 w-full">
-              <div 
-                className="bg-red-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-4">
-        {/* Question Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Question:</h2>
-          <p className="text-gray-700 text-base">{taskData.campaign.question}</p>
-        </div>
-
-        {/* Image Viewer */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-          {viewMode === 'immersive' ? (
-            // Immersive 360° View
-            <div className="relative">
-              <PhotoSphere
-                src={currentImage.url}
-                height="500px"
-                width="100%"
-                containerClass="rounded-lg"
-                config={{
-                  navbar: false, // Hide all controls as specified
-                  touchmove: true,
-                  mousemove: true,
-                }}
-              />
-            </div>
-          ) : (
-            // Focused Panoramic View
-            <div className="p-4">
-              <div className="overflow-x-auto">
-                <img
-                  src={currentImage.url}
-                  alt="Panoramic view"
-                  className="h-96 w-auto min-w-full object-cover rounded-lg"
-                  style={{ 
-                    transform: 'perspective(1000px) rotateX(0deg)',
-                    filter: 'none'
-                  }}
+            {/* Progress Bar */}
+            <div className="mt-4">
+              <div className="bg-gray-200 rounded-full h-2 w-full">
+                <div 
+                  className="bg-[#EF4444] h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-sm text-gray-500 mt-2 text-center">
-                Scroll horizontally to explore the full panoramic view
-              </p>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Response Buttons */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-2 gap-4">
-            {/* No Button */}
-            <button
-              onClick={() => handleResponse(false)}
-              disabled={isSubmitting}
-              className="h-16 border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500/20"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-              ) : (
-                'No'
-              )}
-            </button>
-
-            {/* Yes Button */}
-            <button
-              onClick={() => handleResponse(true)}
-              disabled={isSubmitting}
-              className="h-16 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-red-500/20"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-              ) : (
-                'Yes'
-              )}
-            </button>
+        {/* Main Content */}
+        <div className="max-w-md mx-auto p-4 space-y-4">
+          {/* Question Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <h2 className="text-base font-semibold text-gray-900 mb-2">Question:</h2>
+            <p className="text-gray-700 text-sm leading-relaxed">{taskData.campaign.question}</p>
           </div>
 
-          <p className="text-sm text-gray-500 text-center mt-4">
-            Take your time to examine the image carefully before responding
-          </p>
+          {/* Image Viewer */}
+          <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 ${
+            isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+          }`}>
+            {viewMode === 'immersive' ? (
+              // Immersive 360° View
+              <div className="relative">
+                <PhotoSphere
+                  src={currentImage.url}
+                  height="400px"
+                  width="100%"
+                  littlePlanet={false}
+                  navbar={false}
+                  touchmoveTwoFingers={false}
+                  mousemove={true}
+                  mousewheel={true}
+                  container=""
+                />
+              </div>
+            ) : (
+              // Focused Panoramic View
+              <div className="p-4">
+                <div className="overflow-x-auto">
+                  <img
+                    src={currentImage.url}
+                    alt="Panoramic view"
+                    className="h-64 w-auto min-w-full object-cover rounded-lg"
+                    style={{ 
+                      transform: 'perspective(1000px) rotateX(0deg)',
+                      filter: 'none'
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Scroll horizontally to explore the full panoramic view
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Response Buttons */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {/* No Button */}
+              <button
+                onClick={() => handleResponse(false)}
+                disabled={isSubmitting || isTransitioning}
+                className="h-12 border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-bold text-base rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500/20"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                ) : (
+                  'No'
+                )}
+              </button>
+
+              {/* Yes Button */}
+              <button
+                onClick={() => handleResponse(true)}
+                disabled={isSubmitting || isTransitioning}
+                className="h-12 bg-[#EF4444] hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#EF4444]/20"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                ) : (
+                  'Yes'
+                )}
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mt-3">
+              Take your time to examine the image carefully before responding
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
