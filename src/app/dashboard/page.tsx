@@ -108,11 +108,11 @@ export default function DashboardPage() {
               </div>
               <div className="text-sm text-gray-500 mb-6">0 of 300 daily target</div>
               <Button
-                onClick={() => router.push('/progress')}
+                onClick={() => router.push('/dashboard/tasks')}
                 variant="outline"
                 className="w-full border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-[#EF4444] hover:text-[#EF4444] rounded-2xl font-medium"
               >
-                View Progress
+                Start Tasks
               </Button>
             </div>
           </CardContent>

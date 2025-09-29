@@ -23,7 +23,6 @@ model User {
   // Worker-specific relations
   responses       Response[]
   dailyReports    DailyReport[]
-  taskSubmissions TaskSubmission[]
 
   @@map("users")
 }
@@ -136,23 +135,6 @@ model News {
   @@map("news")
 }
 
-// TaskSubmission model - for Phase 4 micro-tasks
-model TaskSubmission {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId         String   // Reference to the task (could be external ID for now)
-  status         TaskSubmissionStatus @default(SUBMITTED)
-  submissionData Json     // Store image data, tags, descriptions as JSON
-  earnings       Float?   // Payment amount in KES
-  submittedAt    DateTime @default(now())
-  reviewedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("task_submissions")
-}
-
 // Enums
 enum UserRole {
   WORKER
@@ -163,11 +145,4 @@ enum NewsPriority {
   LOW
   MEDIUM
   HIGH
-}
-
-enum TaskSubmissionStatus {
-  SUBMITTED
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
 }
