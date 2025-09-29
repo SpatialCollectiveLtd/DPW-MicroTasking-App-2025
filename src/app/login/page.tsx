@@ -124,19 +124,19 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-black mb-3">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-black text-gray-900 mb-4 leading-tight tracking-tight">
             Sign in to access your dashboard
           </h1>
-          <p className="text-gray-700 text-base">Enter your phone number and select your settlement</p>
+          <p className="text-gray-600 text-lg font-medium">Enter your phone number and select your settlement</p>
         </div>
 
         {/* Form Container */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Phone Number Field */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-black mb-2">
+              <label htmlFor="phone" className="block text-sm font-bold text-gray-900 mb-3">
                 Phone Number
               </label>
               <div className="relative">
@@ -148,14 +148,14 @@ export default function LoginPage() {
                   value={formData.phone}
                   onChange={handlePhoneChange}
                   disabled={isLoading}
-                  className="w-full pl-12 pr-4 py-4 h-14 text-base bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:bg-white focus:outline-none transition-all duration-200 placeholder:text-gray-400"
+                  className="w-full pl-12 pr-4 py-4 h-14 text-base bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-[#EF4444] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EF4444]/20 transition-all duration-200 placeholder:text-gray-400 font-medium"
                 />
               </div>
             </div>
 
             {/* Settlement Field */}
             <div>
-              <label htmlFor="settlement" className="block text-sm font-semibold text-black mb-2">
+              <label htmlFor="settlement" className="block text-sm font-bold text-gray-900 mb-3">
                 Settlement
               </label>
               <Select
@@ -163,7 +163,7 @@ export default function LoginPage() {
                 onValueChange={handleSettlementChange}
                 disabled={isLoading || isLoadingSettlements}
               >
-                <SelectTrigger className="w-full h-14 px-4 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:bg-white text-base">
+                <SelectTrigger className="w-full h-14 px-4 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-[#EF4444] focus:bg-white focus:ring-2 focus:ring-[#EF4444]/20 text-base font-medium">
                   <div className="flex items-center">
                     <MapPin className="h-5 w-5 text-gray-400 mr-3" />
                     <SelectValue placeholder="Choose your settlement..." />
@@ -205,7 +205,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || isLoadingSettlements}
-              className="w-full h-14 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-red-500/20"
+              className="w-full h-14 bg-[#EF4444] hover:bg-[#DC2626] active:bg-[#B91C1C] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#EF4444]/30 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -223,11 +223,11 @@ export default function LoginPage() {
         <div className="text-center mt-8">
           <p className="text-gray-600 text-sm">
             By continuing, you agree to DPW's{' '}
-            <span className="text-red-500 hover:text-red-600 cursor-pointer underline font-medium">
+            <span className="text-[#EF4444] hover:text-[#DC2626] cursor-pointer underline font-medium transition-colors">
               Terms of Use
             </span>{' '}
             &{' '}
-            <span className="text-red-500 hover:text-red-600 cursor-pointer underline font-medium">
+            <span className="text-[#EF4444] hover:text-[#DC2626] cursor-pointer underline font-medium transition-colors">
               Privacy Policy
             </span>
           </p>

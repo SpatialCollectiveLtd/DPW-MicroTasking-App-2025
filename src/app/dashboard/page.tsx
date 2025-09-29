@@ -1,140 +1,155 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, MapPin, Briefcase } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import DailyCompletionCard from '@/components/dashboard/DailyCompletionCard';
+import NoticesFeed from '@/components/dashboard/NoticesFeed';
+import { Bell, Settings, LogOut } from 'lucide-react';
+
+interface DailyStats {
+  tasksCompleted: number;
+  targetTasks: number;
+  accuracyScore: number;
+  totalPay: number;
+}
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/login');
-    }
-  }, [status, router]);
+    fetchDailyStats();
+  }, []);
 
-  const handleSignOut = async () => {
-    await signOut({ redirect: false });
-    router.push('/login');
+  const fetchDailyStats = async () => {
+    try {
+      const response = await fetch('/api/daily-report');
+      const result = await response.json();
+      
+      if (result.success) {
+        setDailyStats(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching daily stats:', error);
+      // Set default values for demo
+      setDailyStats({
+        tasksCompleted: 0,
+        targetTasks: 300,
+        accuracyScore: 0,
+        totalPay: 0
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleStartTask = () => {
+    router.push('/dashboard/tasks');
+  };
 
-  if (!session) {
-    return null; // Will redirect via useEffect
-  }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getUserName = () => {
+    if (session?.user?.phone) {
+      // Extract last 4 digits for a friendly display
+      const lastFour = session.user.phone.slice(-4);
+      return `Worker ${lastFour}`;
+    }
+    return 'Worker';
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DashboardLayout>
       {/* Header */}
-      <header className="bg-white border-b-2 border-gray-100 shadow-sm">
-        <div className="max-w-lg mx-auto px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-8 bg-[#1D1D1F] rounded-xl flex items-center justify-center">
-              <div className="text-white text-sm font-black">DPW</div>
-            </div>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#1D1D1F]">Dashboard</h1>
-              <p className="text-gray-600 text-sm">Welcome back!</p>
+              <h1 className="text-xl font-bold text-gray-900">
+                {getGreeting()}, {getUserName()}
+              </h1>
+              <p className="text-sm text-gray-600">
+                {session?.user?.settlementName || 'Digital Public Works'}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <Bell className="h-5 w-5 text-gray-600" />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <Settings className="h-5 w-5 text-gray-600" />
+              </button>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSignOut}
-            className="flex items-center gap-2 bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-[#EF4444] hover:text-[#EF4444] px-4 py-2 rounded-2xl font-medium transition-all duration-200"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-lg mx-auto px-6 py-8 space-y-8">
-        {/* Welcome Card */}
-        <Card className="bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-200">
-          <CardHeader className="pb-4 px-8 pt-8">
-            <CardTitle className="text-xl flex items-center gap-3 text-[#1D1D1F]">
-              <User className="h-6 w-6 text-[#EF4444]" />
-              Welcome Back!
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 px-8 pb-8">
-            <div className="flex items-center gap-3 text-base">
-              <span className="font-semibold text-[#1D1D1F]">Phone:</span>
-              <span className="text-gray-600">{session.user?.phone}</span>
-            </div>
-            <div className="flex items-center gap-3 text-base">
-              <span className="font-semibold text-[#1D1D1F]">Role:</span>
-              <span className="text-gray-600 capitalize">{session.user?.role?.toLowerCase()}</span>
-            </div>
-            {session.user?.settlementName && (
-              <div className="flex items-center gap-3 text-base">
-                <MapPin className="h-5 w-5 text-[#EF4444]" />
-                <span className="text-gray-600">{session.user.settlementName}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="max-w-md mx-auto p-4 space-y-6">
+        {/* Daily Completion Card */}
+        <DailyCompletionCard
+          tasksCompleted={dailyStats?.tasksCompleted || 0}
+          targetTasks={dailyStats?.targetTasks || 300}
+          onStartTask={handleStartTask}
+          isLoading={isLoading}
+        />
 
-        {/* Quick Stats Card */}
-        <Card className="bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-200">
-          <CardHeader className="pb-4 px-8 pt-8">
-            <CardTitle className="text-xl flex items-center gap-3 text-[#1D1D1F]">
-              <Briefcase className="h-6 w-6 text-[#EF4444]" />
-              Today's Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <div className="text-center py-8">
-              <div className="text-4xl font-bold text-[#1D1D1F] mb-3">0</div>
-              <div className="text-base text-gray-600 mb-6 font-medium">Tasks Completed</div>
-              <div className="bg-gray-100 rounded-full h-3 w-full mb-4">
-                <div className="bg-[#EF4444] h-3 rounded-full w-0 transition-all duration-500"></div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                KSh {dailyStats?.totalPay?.toLocaleString() || '0'}
               </div>
-              <div className="text-sm text-gray-500 mb-6">0 of 300 daily target</div>
-              <Button
-                onClick={() => router.push('/dashboard/tasks')}
-                variant="outline"
-                className="w-full border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-[#EF4444] hover:text-[#EF4444] rounded-2xl font-medium"
-              >
-                Start Tasks
-              </Button>
+              <div className="text-sm text-gray-600">Today's Earnings</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {dailyStats?.accuracyScore?.toFixed(1) || '0.0'}%
+              </div>
+              <div className="text-sm text-gray-600">Accuracy Score</div>
+            </div>
+          </div>
+        </div>
 
-        {/* Tasks Card */}
-        <Card className="bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-200">
-          <CardContent className="text-center py-10 px-8">
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="font-bold text-[#1D1D1F] mb-3 text-lg">Ready to Earn?</h3>
-            <p className="text-base text-gray-600 leading-relaxed mb-6">
-              Complete micro-tasks in your settlement and earn money for contributing to urban resilience.
-            </p>
-            <Button
-              onClick={() => router.push('/tasks')}
-              className="w-full h-12 bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold rounded-2xl transition-all duration-200"
+        {/* Notices Feed */}
+        <NoticesFeed maxItems={3} />
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={() => router.push('/dashboard/earnings')}
+              className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
             >
-              View Available Tasks
-            </Button>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+              <div className="font-medium text-gray-900">View Earnings</div>
+              <div className="text-sm text-gray-500">Payment history</div>
+            </button>
+            
+            <button 
+              onClick={() => router.push('/dashboard/profile')}
+              className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="font-medium text-gray-900">Profile</div>
+              <div className="text-sm text-gray-500">Account settings</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
