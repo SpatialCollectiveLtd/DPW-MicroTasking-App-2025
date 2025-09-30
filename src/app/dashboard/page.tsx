@@ -16,6 +16,7 @@ interface Notice {
   content: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   createdAt: string;
+  targetType: 'ALL' | 'SETTLEMENT' | 'PERSONAL';
   isRead?: boolean;
 }
 
@@ -97,14 +98,16 @@ export default function DashboardPage() {
           title: 'Welcome to DPW MicroTasking',
           content: 'Thank you for joining our community mapping initiative. Your contributions help build better communities through accurate data collection.',
           priority: 'HIGH',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          targetType: 'ALL'
         },
         {
           id: '2', 
           title: 'Payment System Update',
           content: 'We have updated our payment processing system. All earnings will now be processed faster with improved tracking.',
           priority: 'MEDIUM',
-          createdAt: new Date(Date.now() - 86400000).toISOString()
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          targetType: 'ALL'
         }
       ]);
       
@@ -162,11 +165,13 @@ export default function DashboardPage() {
 
   const getUserName = () => {
     if (session?.user?.name) {
-      return session.user.name;
+      // Extract first name only
+      const firstName = session.user.name.split(' ')[0];
+      return firstName;
     }
     if (session?.user?.phone) {
       const lastFour = session.user.phone.slice(-4);
-      return `Mji wa Huruma`; // Using the name from the inspiration
+      return `Worker ${lastFour}`;
     }
     return 'Worker';
   };
@@ -326,35 +331,10 @@ export default function DashboardPage() {
             fontWeight: 'bold',
             color: '#111827',
             margin: '0 0 8px 0',
-            lineHeight: '1.1'
+            lineHeight: '1.1',
+            fontFamily: '"Astro Space", "Space Grotesk", "Inter", system-ui, sans-serif'
           }}>
-            The{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              power
-            </span>
-            {' '}of{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              digital
-            </span>
-            {' '}work in your{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              hands
-            </span>
+            DPW MicroTasking
           </h2>
           <p style={{
             fontSize: '16px',
@@ -371,9 +351,12 @@ export default function DashboardPage() {
           padding: '32px 24px',
           marginBottom: '24px',
           position: 'relative',
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
+          background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(31, 41, 55, 0.2) 100%)',
           borderRadius: '24px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
         }}>
           {/* Background pattern */}
           <div style={{
@@ -382,7 +365,7 @@ export default function DashboardPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.1) 0%, transparent 50%)',
             pointerEvents: 'none'
           }} />
           
@@ -400,17 +383,19 @@ export default function DashboardPage() {
           }}>
             <p style={{
               fontSize: '16px',
-              color: '#4b5563',
+              color: '#e5e7eb',
               margin: '0 0 8px 0',
-              fontWeight: '500'
+              fontWeight: '500',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)'
             }}>
               Daily Progress
             </p>
             <p style={{
               fontSize: '14px',
-              color: '#6b7280',
+              color: '#d1d5db',
               margin: '0',
-              opacity: 0.8
+              opacity: 0.9,
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)'
             }}>
               {tasksCompleted >= TARGET_TASKS 
                 ? 'Congratulations! You\'ve completed today\'s tasks!' 
