@@ -37,7 +37,17 @@ export default function LoginPage() {
     const checkSession = async () => {
       const session = await getSession();
       if (session) {
-        router.replace('/dashboard');
+        // Check if user completed tasks today
+        const today = new Date().toDateString();
+        const completionDate = localStorage.getItem('dpw-completion-date');
+        const completedTasks = parseInt(localStorage.getItem('dpw-tasks-completed') || '0');
+        
+        if (completionDate === today && completedTasks >= 300) {
+          // User has completed today's tasks, redirect to dashboard which will show completion screen
+          router.replace('/dashboard');
+        } else {
+          router.replace('/dashboard');
+        }
       }
     };
     checkSession();

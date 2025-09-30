@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { NotificationToast } from '@/components/notifications/NotificationToast';
+import NoticesPopup from '@/components/dashboard/NoticesPopup';
+import ProgressRing from '@/components/dashboard/ProgressRing';
+import CompletionScreen from '@/components/dashboard/CompletionScreen';
 
 interface Notice {
   id: string;
@@ -23,12 +26,59 @@ export default function DashboardPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [showNoticesPopup, setShowNoticesPopup] = useState(false);
+  const [tasksCompleted, setTasksCompleted] = useState(0);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+  
+  const TARGET_TASKS = 300;
 
   useEffect(() => {
     if (session) {
       fetchNotices();
+      checkCompletionStatus();
+      fetchTasksCompleted();
     }
   }, [session]);
+
+  const checkCompletionStatus = () => {
+    const today = new Date().toDateString();
+    const completionDate = localStorage.getItem('dpw-completion-date');
+    const completedTasks = parseInt(localStorage.getItem('dpw-tasks-completed') || '0');
+    
+    // If user completed tasks today, show completion screen
+    if (completionDate === today && completedTasks >= TARGET_TASKS) {
+      setShowCompletionScreen(true);
+    }
+  };
+
+  const fetchTasksCompleted = async () => {
+    try {
+      // Try to fetch from API first
+      const response = await fetch('/api/daily-report');
+      const result = await response.json();
+      
+      if (result.success && result.data.tasksCompleted) {
+        const completed = result.data.tasksCompleted;
+        setTasksCompleted(completed);
+        
+        // Check if user reached the limit
+        if (completed >= TARGET_TASKS) {
+          setShowCompletionScreen(true);
+        }
+      } else {
+        // Fallback to localStorage or demo data
+        const storedTasks = localStorage.getItem('dpw-demo-tasks');
+        const demoTasks = storedTasks ? parseInt(storedTasks) : 47; // Demo value
+        setTasksCompleted(demoTasks);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      // Use demo data
+      const storedTasks = localStorage.getItem('dpw-demo-tasks');
+      const demoTasks = storedTasks ? parseInt(storedTasks) : 47;
+      setTasksCompleted(demoTasks);
+    }
+  };
 
   const fetchNotices = async () => {
     try {
@@ -70,7 +120,44 @@ export default function DashboardPage() {
   };
 
   const handleStartTasking = () => {
+    // Increment demo tasks for testing completion
+    const newCount = tasksCompleted + 1;
+    setTasksCompleted(newCount);
+    localStorage.setItem('dpw-demo-tasks', newCount.toString());
+    
+    // Check if reached completion
+    if (newCount >= TARGET_TASKS) {
+      const today = new Date().toDateString();
+      localStorage.setItem('dpw-completion-date', today);
+      localStorage.setItem('dpw-tasks-completed', newCount.toString());
+      setShowCompletionScreen(true);
+      return;
+    }
+    
     router.push('/dashboard/tasks');
+  };
+
+  const handleBellClick = () => {
+    setShowNoticesPopup(true);
+    // Close the old notification panel if open
+    setShowNotificationPanel(false);
+  };
+
+  const handleMarkNoticeAsRead = (noticeId: string) => {
+    setNotices(prev => 
+      prev.map(notice => 
+        notice.id === noticeId 
+          ? { ...notice, isRead: true }
+          : notice
+      )
+    );
+    
+    // Also save to localStorage
+    const readNotices = JSON.parse(localStorage.getItem('readNotices') || '[]');
+    if (!readNotices.includes(noticeId)) {
+      readNotices.push(noticeId);
+      localStorage.setItem('readNotices', JSON.stringify(readNotices));
+    }
   };
 
   const getUserName = () => {
@@ -109,6 +196,17 @@ export default function DashboardPage() {
       default: return '#10b981';
     }
   };
+
+  // Show completion screen if tasks are complete
+  if (showCompletionScreen) {
+    return (
+      <CompletionScreen 
+        tasksCompleted={tasksCompleted}
+        targetTasks={TARGET_TASKS}
+        onComplete={() => setShowCompletionScreen(false)}
+      />
+    );
+  }
 
   if (!session) {
     return (
@@ -174,7 +272,7 @@ export default function DashboardPage() {
           
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+              onClick={handleBellClick}
               style={{
                 background: 'none',
                 border: 'none',
@@ -208,133 +306,6 @@ export default function DashboardPage() {
                 </div>
               )}
             </button>
-
-            {/* Notification Panel */}
-            {showNotificationPanel && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                marginTop: '8px',
-                width: '300px',
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                border: '1px solid #e5e7eb',
-                zIndex: 50,
-                maxHeight: '400px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  padding: '16px',
-                  borderBottom: '1px solid #f3f4f6',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#111827',
-                    margin: '0'
-                  }}>
-                    Notifications
-                  </h3>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllAsRead}
-                        style={{
-                          fontSize: '12px',
-                          color: '#6b7280',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          textDecoration: 'underline'
-                        }}
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowNotificationPanel(false)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px'
-                      }}
-                    >
-                      <X style={{ width: '16px', height: '16px', color: '#6b7280' }} />
-                    </button>
-                  </div>
-                </div>
-                
-                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-                  {notifications.length === 0 ? (
-                    <div style={{
-                      padding: '32px 16px',
-                      textAlign: 'center',
-                      color: '#9ca3af'
-                    }}>
-                      No notifications yet
-                    </div>
-                  ) : (
-                    notifications.slice(0, 10).map((notification) => (
-                      <div
-                        key={notification.id}
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #f9fafb',
-                          backgroundColor: notification.read ? 'white' : '#f0f9ff'
-                        }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between'
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <h4 style={{
-                              fontSize: '13px',
-                              fontWeight: '600',
-                              color: '#111827',
-                              margin: '0 0 4px 0'
-                            }}>
-                              {notification.title}
-                            </h4>
-                            <p style={{
-                              fontSize: '12px',
-                              color: '#6b7280',
-                              margin: '0 0 4px 0',
-                              lineHeight: '1.4'
-                            }}>
-                              {notification.message}
-                            </p>
-                            <span style={{
-                              fontSize: '11px',
-                              color: '#9ca3af'
-                            }}>
-                              {formatTimeAgo(notification.timestamp.toISOString())}
-                            </span>
-                          </div>
-                          {!notification.read && (
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              backgroundColor: '#3b82f6',
-                              borderRadius: '50%',
-                              marginTop: '4px',
-                              marginLeft: '8px'
-                            }} />
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -395,102 +366,58 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Notices Section */}
+        {/* Progress Ring Section */}
         <div style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          padding: '24px',
+          padding: '32px 24px',
           marginBottom: '24px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+          position: 'relative',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
+          borderRadius: '24px',
+          overflow: 'hidden'
         }}>
-          <h3 style={{
-            fontSize: '18px',
-            fontWeight: 'bold',
-            color: '#111827',
-            margin: '0 0 16px 0'
-          }}>
-            Latest Updates
-          </h3>
+          {/* Background pattern */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+            pointerEvents: 'none'
+          }} />
           
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <div style={{
-                width: '24px',
-                height: '24px',
-                border: '2px solid #e5e7eb',
-                borderTop: '2px solid #ef4444',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 8px'
-              }} />
-              <p style={{ color: '#6b7280', fontSize: '14px', margin: '0' }}>Loading updates...</p>
-            </div>
-          ) : notices.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p style={{ color: '#9ca3af', fontSize: '14px', margin: '0' }}>No updates at this time</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {notices.map((notice) => (
-                <div
-                  key={notice.id}
-                  style={{
-                    padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '12px',
-                    borderLeft: `4px solid ${getPriorityColor(notice.priority)}`
-                  }}
-                >
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
-                    justifyContent: 'space-between',
-                    marginBottom: '8px'
-                  }}>
-                    <h4 style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#111827',
-                      margin: '0',
-                      flex: '1'
-                    }}>
-                      {notice.title}
-                    </h4>
-                    {notice.priority === 'HIGH' && (
-                      <span style={{
-                        fontSize: '10px',
-                        fontWeight: '600',
-                        color: '#ef4444',
-                        backgroundColor: '#fef2f2',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        marginLeft: '8px'
-                      }}>
-                        Important
-                      </span>
-                    )}
-                  </div>
-                  <p style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: '0 0 8px 0',
-                    lineHeight: '1.4'
-                  }}>
-                    {notice.content.length > 100 
-                      ? `${notice.content.substring(0, 100)}...` 
-                      : notice.content
-                    }
-                  </p>
-                  <span style={{
-                    fontSize: '11px',
-                    color: '#9ca3af'
-                  }}>
-                    {formatTimeAgo(notice.createdAt)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <ProgressRing 
+            completed={tasksCompleted} 
+            total={TARGET_TASKS} 
+            size={220}
+          />
+          
+          <div style={{
+            textAlign: 'center',
+            marginTop: '24px',
+            position: 'relative',
+            zIndex: 1
+          }}>
+            <p style={{
+              fontSize: '16px',
+              color: '#4b5563',
+              margin: '0 0 8px 0',
+              fontWeight: '500'
+            }}>
+              Daily Progress
+            </p>
+            <p style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              margin: '0',
+              opacity: 0.8
+            }}>
+              {tasksCompleted >= TARGET_TASKS 
+                ? 'Congratulations! You\'ve completed today\'s tasks!' 
+                : `${TARGET_TASKS - tasksCompleted} tasks remaining`
+              }
+            </p>
+          </div>
         </div>
 
         {/* Start Tasking Button */}
@@ -535,6 +462,14 @@ export default function DashboardPage() {
 
       {/* Notification Toast */}
       <NotificationToast />
+
+      {/* Notices Popup */}
+      <NoticesPopup
+        isOpen={showNoticesPopup}
+        onClose={() => setShowNoticesPopup(false)}
+        notices={notices}
+        onMarkAsRead={handleMarkNoticeAsRead}
+      />
 
       {/* Overlay to close notification panel */}
       {showNotificationPanel && (
