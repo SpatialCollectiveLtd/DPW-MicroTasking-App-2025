@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
   const fetchNotices = async () => {
     try {
-      const response = await fetch('/api/news');
+      const response = await fetch('/api/notices?includeRead=true');
       const result = await response.json();
       
       if (result.success) {
@@ -146,20 +146,41 @@ export default function DashboardPage() {
     setShowNotificationPanel(false);
   };
 
-  const handleMarkNoticeAsRead = (noticeId: string) => {
-    setNotices(prev => 
-      prev.map(notice => 
-        notice.id === noticeId 
-          ? { ...notice, isRead: true }
-          : notice
-      )
-    );
-    
-    // Also save to localStorage
-    const readNotices = JSON.parse(localStorage.getItem('readNotices') || '[]');
-    if (!readNotices.includes(noticeId)) {
-      readNotices.push(noticeId);
-      localStorage.setItem('readNotices', JSON.stringify(readNotices));
+  const handleMarkNoticeAsRead = async (noticeId: string) => {
+    try {
+      const response = await fetch(`/api/notices/${noticeId}/read`, {
+        method: 'POST',
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        setNotices(prev => 
+          prev.map(notice => 
+            notice.id === noticeId 
+              ? { ...notice, isRead: true }
+              : notice
+          )
+        );
+        
+        // Also save to localStorage as backup
+        const readNotices = JSON.parse(localStorage.getItem('readNotices') || '[]');
+        if (!readNotices.includes(noticeId)) {
+          readNotices.push(noticeId);
+          localStorage.setItem('readNotices', JSON.stringify(readNotices));
+        }
+      }
+    } catch (error) {
+      console.error('Error marking notice as read:', error);
+      // Still update local state as fallback
+      setNotices(prev => 
+        prev.map(notice => 
+          notice.id === noticeId 
+            ? { ...notice, isRead: true }
+            : notice
+        )
+      );
     }
   };
 
@@ -383,19 +404,20 @@ export default function DashboardPage() {
           }}>
             <p style={{
               fontSize: '16px',
-              color: '#e5e7eb',
+              color: '#dc2626',
               margin: '0 0 8px 0',
-              fontWeight: '500',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)'
+              fontWeight: '600',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
             }}>
               Daily Progress
             </p>
             <p style={{
               fontSize: '14px',
-              color: '#d1d5db',
+              color: '#b91c1c',
               margin: '0',
-              opacity: 0.9,
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)'
+              opacity: 1,
+              fontWeight: '500',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
             }}>
               {tasksCompleted >= TARGET_TASKS 
                 ? 'Congratulations! You\'ve completed today\'s tasks!' 

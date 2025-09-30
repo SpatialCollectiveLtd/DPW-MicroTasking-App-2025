@@ -24,6 +24,7 @@ model User {
   // Worker-specific relations
   responses       Response[]
   dailyReports    DailyReport[]
+  noticeReads     NoticeRead[]
 
   @@map("users")
 }
@@ -35,6 +36,7 @@ model Settlement {
   location    String?
   users       User[]
   campaigns   CampaignSettlement[]
+  notices     Notice[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -137,6 +139,39 @@ model News {
   @@map("news")
 }
 
+// Notice model - enhanced admin announcements with targeting and read tracking
+model Notice {
+  id           String       @id @default(cuid())
+  title        String
+  content      String       @db.Text
+  priority     NoticePriority @default(MEDIUM)
+  targetType   NoticeTarget @default(ALL)
+  settlementId String?      // Required if targetType is SETTLEMENT
+  settlement   Settlement?  @relation(fields: [settlementId], references: [id])
+  isActive     Boolean      @default(true)
+  createdBy    String       // User ID of admin who created it
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  // Read tracking
+  reads        NoticeRead[]
+
+  @@map("notices")
+}
+
+// Notice read tracking - tracks which users have read which notices
+model NoticeRead {
+  id       String   @id @default(cuid())
+  noticeId String
+  notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt   DateTime @default(now())
+
+  @@unique([noticeId, userId]) // One read record per user per notice
+  @@map("notice_reads")
+}
+
 // Enums
 enum UserRole {
   WORKER
@@ -147,6 +182,18 @@ enum NewsPriority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum NoticePriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum NoticeTarget {
+  ALL        // All users
+  SETTLEMENT // Users in specific settlement
+  PERSONAL   // Individual user (future expansion)
 }
 
 enum ImageStatus {

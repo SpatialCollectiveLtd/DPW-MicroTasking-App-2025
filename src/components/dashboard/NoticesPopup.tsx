@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Filter, Clock } from 'lucide-react';
+import NoticeDetailModal from './NoticeDetailModal';
 
 interface Notice {
   id: string;
@@ -21,19 +22,18 @@ interface NoticesPopupProps {
 }
 
 export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }: NoticesPopupProps) {
-  const [activeTab, setActiveTab] = useState<'recent' | 'past' | 'personal'>('recent');
+  const [activeTab, setActiveTab] = useState<'recent' | 'history' | 'personal'>('recent');
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
-  const filterNotices = (type: 'recent' | 'past' | 'personal') => {
-    const now = new Date();
-    const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
-
+  const filterNotices = (type: 'recent' | 'history' | 'personal') => {
     switch (type) {
       case 'recent':
-        return notices.filter(notice => new Date(notice.createdAt) > threeDaysAgo);
-      case 'past':
-        return notices.filter(notice => new Date(notice.createdAt) <= threeDaysAgo);
+        return notices.filter(notice => !notice.isRead);
+      case 'history':
+        return notices.filter(notice => notice.isRead);
       case 'personal':
         return notices.filter(notice => notice.targetType === 'PERSONAL');
       default:
@@ -42,6 +42,21 @@ export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }:
   };
 
   const filteredNotices = filterNotices(activeTab);
+
+  const handleNoticeClick = (notice: Notice) => {
+    setSelectedNotice(notice);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDetailModalClose = () => {
+    setIsDetailModalOpen(false);
+    setSelectedNotice(null);
+  };
+
+  const handleMarkAsReadFromModal = (id: string) => {
+    onMarkAsRead(id);
+    handleDetailModalClose();
+  };
 
   const formatTimeAgo = (dateString: string) => {
     const now = new Date();
@@ -163,8 +178,8 @@ export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }:
             gap: '8px'
           }}>
             {[
-              { key: 'recent', label: 'Recent' },
-              { key: 'past', label: 'Past' },
+              { key: 'recent', label: 'Unread' },
+              { key: 'history', label: 'History' },
               { key: 'personal', label: 'Personal' }
             ].map((tab) => (
               <button
@@ -205,8 +220,8 @@ export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }:
                 No notices yet
               </h3>
               <p style={{ fontSize: '14px', margin: '0' }}>
-                {activeTab === 'recent' && 'No recent notices to show'}
-                {activeTab === 'past' && 'No past notices found'}
+                {activeTab === 'recent' && 'No unread notices to show'}
+                {activeTab === 'history' && 'No read notices found'}
                 {activeTab === 'personal' && 'No personal notices for you'}
               </p>
             </div>
@@ -215,27 +230,23 @@ export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }:
               {filteredNotices.map((notice) => (
                 <div
                   key={notice.id}
-                  onClick={() => !notice.isRead && onMarkAsRead(notice.id)}
+                  onClick={() => handleNoticeClick(notice)}
                   style={{
                     padding: '20px',
                     backgroundColor: notice.isRead ? '#f9fafb' : '#fff',
                     border: `2px solid ${notice.isRead ? '#f3f4f6' : getPriorityColor(notice.priority)}`,
                     borderRadius: '16px',
-                    cursor: notice.isRead ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'all 0.2s',
                     position: 'relative'
                   }}
                   onMouseEnter={(e) => {
-                    if (!notice.isRead) {
-                      (e.target as HTMLElement).style.transform = 'translateY(-2px)';
-                      (e.target as HTMLElement).style.boxShadow = '0 8px 25px -5px rgba(0, 0, 0, 0.1)';
-                    }
+                    (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+                    (e.target as HTMLElement).style.boxShadow = '0 8px 25px -5px rgba(0, 0, 0, 0.1)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!notice.isRead) {
-                      (e.target as HTMLElement).style.transform = 'translateY(0)';
-                      (e.target as HTMLElement).style.boxShadow = 'none';
-                    }
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
                   }}
                 >
                   {/* Header */}
@@ -328,6 +339,14 @@ export default function NoticesPopup({ isOpen, onClose, notices, onMarkAsRead }:
           }
         }
       `}</style>
+
+      {/* Notice Detail Modal */}
+      <NoticeDetailModal
+        notice={selectedNotice}
+        isOpen={isDetailModalOpen}
+        onClose={handleDetailModalClose}
+        onMarkAsRead={handleMarkAsReadFromModal}
+      />
     </>
   );
 }

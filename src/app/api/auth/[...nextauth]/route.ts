@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { isValidKenyanPhone } from '@/lib/utils';
 import type { AuthUser } from '@/types';
 
-const handler = NextAuth({
+const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -146,10 +146,12 @@ const handler = NextAuth({
     error: '/login?error=auth',
   },
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
 
-export { handler as GET, handler as POST };
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST, authOptions };
