@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Phone, MapPin, ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { isValidKenyanPhone } from '@/lib/utils';
-import { cn } from '@/lib/utils';
 
 interface Settlement {
   id: string;
@@ -27,16 +26,13 @@ export default function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSettlements, setIsLoadingSettlements] = useState(true);
-  const [error, setError] = useState('');
-  const [shakeCard, setShakeCard] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [error, setError] = useState('');
 
-  // Fetch settlements on component mount
   useEffect(() => {
     fetchSettlements();
   }, []);
 
-  // Check if user is already authenticated
   useEffect(() => {
     const checkSession = async () => {
       const session = await getSession();
@@ -65,31 +61,22 @@ export default function LoginPage() {
     }
   };
 
-  const triggerShakeAnimation = () => {
-    setShakeCard(true);
-    setTimeout(() => setShakeCard(false), 500);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!formData.phone.trim()) {
       setError('Please enter your phone number');
-      triggerShakeAnimation();
       return;
     }
 
     if (!isValidKenyanPhone(formData.phone)) {
       setError('Please enter a valid Kenyan phone number');
-      triggerShakeAnimation();
       return;
     }
 
     if (!formData.settlementId) {
       setError('Please select your settlement');
-      triggerShakeAnimation();
       return;
     }
 
@@ -104,15 +91,12 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError('Invalid credentials. Please check your phone number and settlement.');
-        triggerShakeAnimation();
       } else if (result?.ok) {
-        // Successful login - redirect to dashboard
         router.push('/dashboard');
       }
     } catch (err) {
       console.error('Login error:', err);
       setError('Network error, please try again');
-      triggerShakeAnimation();
     } finally {
       setIsLoading(false);
     }
@@ -124,251 +108,340 @@ export default function LoginPage() {
     if (error) setError('');
   };
 
-  const handleSettlementSelect = (settlementId: string) => {
-    setFormData(prev => ({ ...prev, settlementId }));
-    setIsDropdownOpen(false);
-    if (error) setError('');
-  };
-
   const selectedSettlement = settlements.find(s => s.id === formData.settlementId);
   const isFormValid = formData.phone.trim() && formData.settlementId && !isLoadingSettlements;
 
   return (
-    <>
-      {/* Desktop View - Relume inspired */}
-      <div className="hidden md:flex min-h-screen bg-[#F7F7F7] items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div 
-            className={cn(
-              "bg-white rounded-lg shadow-lg border border-gray-200 p-8 transition-transform duration-300",
-              shakeCard && "animate-[shake_0.5s_ease-in-out]"
-            )}
-          >
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-black mb-2">Welcome Back</h1>
-              <p className="text-gray-600 text-base">Sign in to your digital workspace</p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Phone Number Field */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-black mb-2">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    id="phone"
-                    type="tel"
-                    placeholder="+254701234567"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 placeholder:text-gray-400 text-black bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Settlement Field */}
-              <div>
-                <label htmlFor="settlement" className="block text-sm font-medium text-black mb-2">
-                  Settlement
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    disabled={isLoading || isLoadingSettlements}
-                    className={cn(
-                      "w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 bg-white text-left",
-                      selectedSettlement ? "text-black" : "text-gray-400"
-                    )}
-                  >
-                    {selectedSettlement ? selectedSettlement.name : "Choose your settlement..."}
-                  </button>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  
-                  {isDropdownOpen && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {settlements.map((settlement) => (
-                        <button
-                          key={settlement.id}
-                          type="button"
-                          onClick={() => handleSettlementSelect(settlement.id)}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          <div className="font-medium text-black">{settlement.name}</div>
-                          {settlement.location && (
-                            <div className="text-sm text-gray-500">{settlement.location}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {isLoadingSettlements && (
-                  <div className="flex items-center mt-2 text-sm text-gray-600">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Loading settlements...
-                  </div>
-                )}
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={!isFormValid || isLoading}
-                className="w-full py-3 bg-[#EF4444] hover:bg-[#DC2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:ring-offset-2"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
-            </form>
-          </div>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#f5f5f5', 
+      display: 'flex', 
+      flexDirection: 'column',
+      alignItems: 'center', 
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      position: 'relative'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        padding: '48px',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
+        {/* Title inside the container */}
+        <div style={{ 
+          textAlign: 'center',
+          marginBottom: '32px'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#111827',
+            margin: '0 0 4px 0',
+            letterSpacing: '-0.5px'
+          }}>
+            DPW MicroTasking
+          </h1>
+          <p style={{
+            color: '#6b7280',
+            margin: '0 0 24px 0',
+            fontSize: '14px'
+          }}>
+            Digital Public Works Platform
+          </p>
         </div>
-      </div>
 
-      {/* Mobile View - Opal inspired */}
-      <div className="md:hidden min-h-screen bg-[#1D1D1F] flex items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <div 
-            className={cn(
-              "transition-transform duration-300",
-              shakeCard && "animate-[shake_0.5s_ease-in-out]"
-            )}
-          >
-            {/* Header */}
-            <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-white mb-3">Welcome Back</h1>
-              <p className="text-gray-400 text-base">Sign in to your digital workspace</p>
-            </div>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <p style={{
+            color: '#374151',
+            margin: '0',
+            fontSize: '18px',
+            fontWeight: '500'
+          }}>
+            Welcome back! Please sign in to access your workspace.
+          </p>
+        </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Phone Number Field */}
-              <div>
-                <label htmlFor="phone-mobile" className="block text-sm font-medium text-white mb-3">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    id="phone-mobile"
-                    type="tel"
-                    placeholder="+254701234567"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    disabled={isLoading}
-                    className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              marginBottom: '8px'
+            }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              placeholder="+254701234567"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '16px',
+                backgroundColor: 'white',
+                color: '#111827',
+                outline: 'none',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#ef4444';
+                e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
 
-              {/* Settlement Field */}
-              <div>
-                <label htmlFor="settlement-mobile" className="block text-sm font-medium text-white mb-3">
-                  Settlement
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    disabled={isLoading || isLoadingSettlements}
-                    className={cn(
-                      "w-full pl-12 pr-12 py-4 bg-gray-800 border border-gray-600 rounded-xl focus:ring-2 focus:ring-[#EF4444] focus:border-[#EF4444] outline-none transition-all duration-200 text-left",
-                      selectedSettlement ? "text-white" : "text-gray-400"
-                    )}
-                  >
-                    {selectedSettlement ? selectedSettlement.name : "Choose your settlement..."}
-                  </button>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  
-                  {isDropdownOpen && (
-                    <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                      {settlements.map((settlement) => (
-                        <button
-                          key={settlement.id}
-                          type="button"
-                          onClick={() => handleSettlementSelect(settlement.id)}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl text-white"
-                        >
-                          <div className="font-medium text-white">{settlement.name}</div>
-                          {settlement.location && (
-                            <div className="text-sm text-gray-400">{settlement.location}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {isLoadingSettlements && (
-                  <div className="flex items-center mt-3 text-sm text-gray-400">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Loading settlements...
-                  </div>
-                )}
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-900/30 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              marginBottom: '8px'
+            }}>
+              Settlement
+            </label>
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                disabled={isLoading || isLoadingSettlements}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  backgroundColor: 'white',
+                  color: formData.settlementId ? '#111827' : '#9ca3af',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ef4444';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                <span>
+                  {formData.settlementId 
+                    ? settlements.find(s => s.id === formData.settlementId)?.name || 'Choose your settlement...'
+                    : 'Choose your settlement...'
+                  }
+                </span>
+                <svg 
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s'
+                  }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '0',
+                  right: '0',
+                  marginTop: '4px',
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  zIndex: 50,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {settlements.map((settlement, index) => (
+                    <button
+                      key={settlement.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, settlementId: settlement.id }));
+                        setIsDropdownOpen(false);
+                        if (error) setError('');
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        border: 'none',
+                        backgroundColor: 'white',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: '#111827',
+                        borderRadius: index === 0 ? '8px 8px 0 0' : index === settlements.length - 1 ? '0 0 8px 8px' : '0',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.target as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.target as HTMLButtonElement).style.backgroundColor = 'white';
+                      }}
+                    >
+                      <div style={{ fontWeight: '500' }}>{settlement.name}</div>
+                      {settlement.location && (
+                        <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '2px' }}>
+                          {settlement.location}
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={!isFormValid || isLoading}
-                className="w-full py-4 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900 mt-8"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
-            </form>
+            </div>
+            {isLoadingSettlements && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '8px',
+                fontSize: '14px',
+                color: '#6b7280'
+              }}>
+                <Loader2 style={{ width: '16px', height: '16px', marginRight: '8px' }} className="animate-spin" />
+                Loading settlements...
+              </div>
+            )}
           </div>
+
+          {error && (
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              marginBottom: '24px'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={!isFormValid || isLoading}
+            style={{
+              width: '100%',
+              padding: '12px 24px',
+              backgroundColor: isFormValid && !isLoading ? '#1f2937' : '#9ca3af',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: isFormValid && !isLoading ? 'pointer' : 'not-allowed',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              if (isFormValid && !isLoading) {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#111827';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isFormValid && !isLoading) {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#1f2937';
+              }
+            }}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 style={{ width: '20px', height: '20px', marginRight: '8px' }} className="animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Log in'
+            )}
+          </button>
+        </form>
+
+        <div style={{
+          textAlign: 'center',
+          marginTop: '24px',
+          paddingTop: '24px',
+          borderTop: '1px solid #e5e7eb'
+        }}>
+          <p style={{
+            color: '#6b7280',
+            fontSize: '14px',
+            margin: '0'
+          }}>
+            Don't have an account?{' '}
+            <span style={{
+              color: '#ef4444',
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}>
+              Contact admin
+            </span>
+          </p>
+        </div>
+
+        {/* Copyright Footer inside container */}
+        <div style={{ 
+          textAlign: 'center',
+          marginTop: '24px',
+          paddingTop: '16px',
+          borderTop: '1px solid #f3f4f6'
+        }}>
+          <p style={{
+            color: '#9ca3af',
+            fontSize: '12px',
+            margin: '0'
+          }}>
+            © 2025 Spatial Collective Ltd. All rights reserved.
+          </p>
         </div>
       </div>
 
       {/* Overlay to close dropdown */}
       {isDropdownOpen && (
         <div 
-          className="fixed inset-0 z-10" 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40
+          }}
           onClick={() => setIsDropdownOpen(false)}
         />
       )}
-
-      {/* Add shake animation styles */}
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-      `}</style>
-    </>
+    </div>
   );
 }
