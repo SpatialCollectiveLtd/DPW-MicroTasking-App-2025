@@ -26,14 +26,17 @@ import {
 interface User {
   id: string;
   name: string;
-  email: string;
+  phone: string;
   role: 'WORKER' | 'ADMIN';
+  settlement: string;
+  settlementId?: string;
   status: 'active' | 'inactive' | 'suspended';
+  tasksCompleted: number;
+  totalEarnings: number;
+  accuracy: number;
   joinDate: string;
   lastActive: string;
-  totalEarnings: number;
-  completedTasks: number;
-  phone?: string;
+  verified: boolean;
 }
 
 export default function UserManagement() {
@@ -55,74 +58,32 @@ export default function UserManagement() {
       return;
     }
 
-    // Mock data - replace with actual API call
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@email.com',
-        role: 'WORKER',
-        status: 'active',
-        joinDate: '2024-01-15',
-        lastActive: '2024-01-20T10:30:00Z',
-        totalEarnings: 1250.75,
-        completedTasks: 45,
-        phone: '+1 (555) 123-4567'
-      },
-      {
-        id: '2',
-        name: 'Michael Chen',
-        email: 'michael.chen@email.com',
-        role: 'WORKER',
-        status: 'active',
-        joinDate: '2024-01-10',
-        lastActive: '2024-01-20T09:15:00Z',
-        totalEarnings: 890.50,
-        completedTasks: 32
-      },
-      {
-        id: '3',
-        name: 'Emily Rodriguez',
-        email: 'emily.rodriguez@email.com',
-        role: 'ADMIN',
-        status: 'active',
-        joinDate: '2023-12-01',
-        lastActive: '2024-01-20T11:45:00Z',
-        totalEarnings: 0,
-        completedTasks: 0,
-        phone: '+1 (555) 987-6543'
-      },
-      {
-        id: '4',
-        name: 'David Kim',
-        email: 'david.kim@email.com',
-        role: 'WORKER',
-        status: 'inactive',
-        joinDate: '2024-01-05',
-        lastActive: '2024-01-18T16:20:00Z',
-        totalEarnings: 425.25,
-        completedTasks: 15
-      },
-      {
-        id: '5',
-        name: 'Lisa Thompson',
-        email: 'lisa.thompson@email.com',
-        role: 'WORKER',
-        status: 'suspended',
-        joinDate: '2024-01-12',
-        lastActive: '2024-01-19T14:10:00Z',
-        totalEarnings: 75.00,
-        completedTasks: 3
+    // Fetch users from database API
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setUsers(result.data);
+        } else {
+          console.error('Failed to fetch users:', result.message);
+          setUsers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setUsers([]);
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
 
-    setUsers(mockUsers);
-    setIsLoading(false);
+    fetchUsers();
   }, [session, status, router]);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         user.phone.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     

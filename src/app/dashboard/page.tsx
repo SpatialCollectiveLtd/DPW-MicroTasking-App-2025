@@ -21,7 +21,7 @@ interface Notice {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { notifications, unreadCount, addNotification, markAllAsRead } = useNotifications();
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -33,13 +33,21 @@ export default function DashboardPage() {
   
   const TARGET_TASKS = 300;
 
+  // Authentication check and redirect
   useEffect(() => {
+    if (status === 'loading') return; // Still loading
+
+    if (status === 'unauthenticated' || !session) {
+      router.push('/login');
+      return;
+    }
+
     if (session) {
       fetchNotices();
       checkCompletionStatus();
       fetchTasksCompleted();
     }
-  }, [session]);
+  }, [session, status, router]);
 
   const checkCompletionStatus = () => {
     const today = new Date().toDateString();
@@ -67,17 +75,13 @@ export default function DashboardPage() {
           setShowCompletionScreen(true);
         }
       } else {
-        // Fallback to localStorage or demo data
-        const storedTasks = localStorage.getItem('dpw-demo-tasks');
-        const demoTasks = storedTasks ? parseInt(storedTasks) : 47; // Demo value
-        setTasksCompleted(demoTasks);
+        // No tasks found, set to 0
+        setTasksCompleted(0);
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      // Use demo data
-      const storedTasks = localStorage.getItem('dpw-demo-tasks');
-      const demoTasks = storedTasks ? parseInt(storedTasks) : 47;
-      setTasksCompleted(demoTasks);
+      // Set to 0 if database is unavailable
+      setTasksCompleted(0);
     }
   };
 
@@ -91,27 +95,10 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching notices:', error);
-      // Set some demo notices for testing
-      setNotices([
-        {
-          id: '1',
-          title: 'Welcome to DPW MicroTasking',
-          content: 'Thank you for joining our community mapping initiative. Your contributions help build better communities through accurate data collection.',
-          priority: 'HIGH',
-          createdAt: new Date().toISOString(),
-          targetType: 'ALL'
-        },
-        {
-          id: '2', 
-          title: 'Payment System Update',
-          content: 'We have updated our payment processing system. All earnings will now be processed faster with improved tracking.',
-          priority: 'MEDIUM',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          targetType: 'ALL'
-        }
-      ]);
+      // Set empty array if database is unavailable
+      setNotices([]);
       
-      // Add demo notifications for testing
+      // Show system notification about connection issue
       addNotification({
         title: 'Welcome to DPW!',
         message: 'Your account has been activated. Start tasking to earn rewards.',
@@ -123,20 +110,7 @@ export default function DashboardPage() {
   };
 
   const handleStartTasking = () => {
-    // Increment demo tasks for testing completion
-    const newCount = tasksCompleted + 1;
-    setTasksCompleted(newCount);
-    localStorage.setItem('dpw-demo-tasks', newCount.toString());
-    
-    // Check if reached completion
-    if (newCount >= TARGET_TASKS) {
-      const today = new Date().toDateString();
-      localStorage.setItem('dpw-completion-date', today);
-      localStorage.setItem('dpw-tasks-completed', newCount.toString());
-      setShowCompletionScreen(true);
-      return;
-    }
-    
+    // Navigate to tasks page where real work happens
     router.push('/dashboard/tasks');
   };
 
@@ -234,7 +208,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) {
+  // Show loading state while checking authentication
+  if (status === 'loading') {
     return (
       <div style={{ 
         minHeight: '100vh', 
@@ -253,10 +228,15 @@ export default function DashboardPage() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: '#6b7280' }}>Loading...</p>
+          <p style={{ color: '#6b7280' }}>Checking authentication...</p>
         </div>
       </div>
     );
+  }
+
+  // Redirect to login if not authenticated (this should not render due to useEffect redirect)
+  if (status === 'unauthenticated' || !session) {
+    return null;
   }
 
   return (

@@ -62,97 +62,27 @@ export default function CampaignManagement() {
       return;
     }
 
-    // Mock data - replace with actual API call
-    const mockCampaigns: Campaign[] = [
-      {
-        id: '1',
-        title: 'Downtown Safety Assessment',
-        question: 'Are there any visible safety hazards in this intersection?',
-        description: 'Comprehensive safety evaluation of downtown intersections',
-        status: 'active',
-        createdDate: '2024-01-15',
-        startDate: '2024-01-16',
-        endDate: '2024-02-15',
-        totalImages: 120,
-        completedResponses: 89,
-        totalResponses: 120,
-        activeWorkers: 15,
-        rewardPerTask: 2.50,
-        priority: 'high',
-        createdBy: 'Admin Team'
-      },
-      {
-        id: '2',
-        title: 'Street Lighting Evaluation',
-        question: 'Is the street lighting adequate in this area?',
-        description: 'Assessment of street lighting coverage and effectiveness',
-        status: 'active',
-        createdDate: '2024-01-10',
-        startDate: '2024-01-12',
-        endDate: '2024-01-30',
-        totalImages: 85,
-        completedResponses: 62,
-        totalResponses: 85,
-        activeWorkers: 8,
-        rewardPerTask: 1.75,
-        priority: 'medium',
-        createdBy: 'City Planning'
-      },
-      {
-        id: '3',
-        title: 'Accessibility Audit',
-        question: 'Are there accessible pathways for wheelchair users in this location?',
-        description: 'Comprehensive accessibility assessment for public spaces',
-        status: 'completed',
-        createdDate: '2024-01-01',
-        startDate: '2024-01-02',
-        endDate: '2024-01-15',
-        totalImages: 150,
-        completedResponses: 150,
-        totalResponses: 150,
-        activeWorkers: 0,
-        rewardPerTask: 3.00,
-        priority: 'high',
-        createdBy: 'Accessibility Team'
-      },
-      {
-        id: '4',
-        title: 'Park Infrastructure Review',
-        question: 'Are the park facilities in good condition?',
-        description: 'Evaluation of park equipment and infrastructure',
-        status: 'draft',
-        createdDate: '2024-01-18',
-        startDate: '2024-01-25',
-        endDate: '2024-02-25',
-        totalImages: 200,
-        completedResponses: 0,
-        totalResponses: 200,
-        activeWorkers: 0,
-        rewardPerTask: 2.25,
-        priority: 'low',
-        createdBy: 'Parks Department'
-      },
-      {
-        id: '5',
-        title: 'Transit Stop Assessment',
-        question: 'Is this transit stop well-maintained and accessible?',
-        description: 'Assessment of public transit infrastructure',
-        status: 'paused',
-        createdDate: '2024-01-08',
-        startDate: '2024-01-10',
-        endDate: '2024-02-10',
-        totalImages: 95,
-        completedResponses: 23,
-        totalResponses: 95,
-        activeWorkers: 0,
-        rewardPerTask: 2.00,
-        priority: 'medium',
-        createdBy: 'Transit Authority'
+    // Fetch campaigns from database API
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch('/api/campaigns');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setCampaigns(result.data);
+        } else {
+          console.error('Failed to fetch campaigns:', result.message);
+          setCampaigns([]);
+        }
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        setCampaigns([]);
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
 
-    setCampaigns(mockCampaigns);
-    setIsLoading(false);
+    fetchCampaigns();
   }, [session, status, router]);
 
   const filteredCampaigns = campaigns.filter(campaign => {

@@ -69,92 +69,74 @@ export default function PaymentReports() {
       return;
     }
 
-    // Mock data - replace with actual API call
-    const mockPayments: PaymentRecord[] = [
-      {
-        id: '1',
-        workerName: 'Sarah Johnson',
-        workerEmail: 'sarah.johnson@email.com',
-        amount: 125.50,
-        status: 'completed',
-        method: 'bank_transfer',
-        transactionId: 'TXN-2024-001',
-        campaignTitle: 'Downtown Safety Assessment',
-        tasksCompleted: 45,
-        dateEarned: '2024-01-18',
-        datePaid: '2024-01-20',
-        fees: 5.25,
-        netAmount: 120.25
-      },
-      {
-        id: '2',
-        workerName: 'Michael Chen',
-        workerEmail: 'michael.chen@email.com',
-        amount: 89.75,
-        status: 'pending',
-        method: 'paypal',
-        campaignTitle: 'Street Lighting Evaluation',
-        tasksCompleted: 32,
-        dateEarned: '2024-01-19',
-        fees: 3.59,
-        netAmount: 86.16
-      },
-      {
-        id: '3',
-        workerName: 'Emily Rodriguez',
-        workerEmail: 'emily.rodriguez@email.com',
-        amount: 167.25,
-        status: 'processing',
-        method: 'bank_transfer',
-        transactionId: 'TXN-2024-002',
-        campaignTitle: 'Accessibility Audit',
-        tasksCompleted: 58,
-        dateEarned: '2024-01-17',
-        fees: 6.69,
-        netAmount: 160.56
-      },
-      {
-        id: '4',
-        workerName: 'David Kim',
-        workerEmail: 'david.kim@email.com',
-        amount: 42.50,
-        status: 'failed',
-        method: 'crypto',
-        campaignTitle: 'Park Infrastructure Review',
-        tasksCompleted: 15,
-        dateEarned: '2024-01-16',
-        fees: 1.70,
-        netAmount: 40.80
-      },
-      {
-        id: '5',
-        workerName: 'Lisa Thompson',
-        workerEmail: 'lisa.thompson@email.com',
-        amount: 78.00,
-        status: 'completed',
-        method: 'paypal',
-        transactionId: 'PP-2024-001',
-        campaignTitle: 'Transit Stop Assessment',
-        tasksCompleted: 26,
-        dateEarned: '2024-01-15',
-        datePaid: '2024-01-18',
-        fees: 3.12,
-        netAmount: 74.88
-      }
-    ];
 
-    const mockSummary: PaymentSummary = {
-      totalPaid: 2450.75,
-      totalPending: 389.25,
-      totalFees: 98.43,
-      totalWorkers: 45,
-      avgPayment: 54.46,
-      monthlyGrowth: 12.5
+
+    // Fetch payments from database API
+    const fetchPayments = async () => {
+      try {
+        const response = await fetch('/api/payments');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Transform API response to match UI interface
+          const transformedPayments: PaymentRecord[] = result.data.payments.map((payment: any) => ({
+            id: payment.id,
+            workerName: payment.userName,
+            workerEmail: payment.phone, // Using phone as identifier
+            amount: payment.totalEarnings,
+            status: payment.status,
+            method: payment.paymentMethod,
+            transactionId: payment.transactionId,
+            campaignTitle: 'Task Completion', // Generic title
+            tasksCompleted: payment.tasksCompleted,
+            dateEarned: payment.lastPayment,
+            datePaid: payment.status === 'completed' ? payment.lastPayment : null,
+            fees: payment.totalEarnings * 0.05, // 5% fee
+            netAmount: payment.totalEarnings * 0.95 // 95% net
+          }));
+
+          setPayments(transformedPayments);
+          
+          // Transform summary to match UI interface
+          const transformedSummary: PaymentSummary = {
+            totalPaid: result.data.summary.totalAmount,
+            totalPending: result.data.summary.pendingPayments * result.data.summary.averageEarning,
+            totalFees: result.data.summary.totalAmount * 0.05,
+            totalWorkers: result.data.summary.totalPayments,
+            avgPayment: result.data.summary.averageEarning,
+            monthlyGrowth: 12.5 // Static for now
+          };
+          
+          setSummary(transformedSummary);
+        } else {
+          console.error('Failed to fetch payments:', result.message);
+          setPayments([]);
+          setSummary({
+            totalPaid: 0,
+            totalPending: 0,
+            totalFees: 0,
+            totalWorkers: 0,
+            avgPayment: 0,
+            monthlyGrowth: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+        setPayments([]);
+        setSummary({
+          totalPaid: 0,
+          totalPending: 0,
+          totalFees: 0,
+          totalWorkers: 0,
+          avgPayment: 0,
+          monthlyGrowth: 0
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setPayments(mockPayments);
-    setSummary(mockSummary);
-    setIsLoading(false);
+    fetchPayments();
   }, [session, status, router]);
 
   const filteredPayments = payments.filter(payment => {

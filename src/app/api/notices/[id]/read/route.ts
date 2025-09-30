@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-// In-memory storage for read notices (replace with database when ready)
-const readNotices = new Set<string>();
-
-// POST - Mark a notice as read (Mock implementation)
+// POST - Mark a notice as read
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -21,17 +19,46 @@ export async function POST(
     }
 
     const noticeId = params.id;
-    const userNoticeKey = `${session.user.id}:${noticeId}`;
 
-    if (readNotices.has(userNoticeKey)) {
+    // Check if notice exists and is active
+    const notice = await prisma.notice.findFirst({
+      where: {
+        id: noticeId,
+        isActive: true
+      }
+    });
+
+    if (!notice) {
+      return NextResponse.json(
+        { success: false, error: 'Notice not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if already marked as read
+    const existingRead = await prisma.noticeRead.findUnique({
+      where: {
+        noticeId_userId: {
+          noticeId,
+          userId: session.user.id
+        }
+      }
+    });
+
+    if (existingRead) {
       return NextResponse.json({
         success: true,
         message: 'Notice already marked as read'
       });
     }
 
-    // Mark as read in mock storage
-    readNotices.add(userNoticeKey);
+    // Mark as read
+    await prisma.noticeRead.create({
+      data: {
+        noticeId,
+        userId: session.user.id
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -39,10 +66,14 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error marking notice as read:', error);
+    console.error('Database connection error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to mark notice as read' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: 'Database connection failed. Please refresh the page and try again.',
+        needsReload: true 
+      },
+      { status: 503 }
     );
   }
 }

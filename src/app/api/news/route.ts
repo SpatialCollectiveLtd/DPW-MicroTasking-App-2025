@@ -21,41 +21,9 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error fetching news:', error);
-    
-    // Return mock data for development when database is not available
-    const mockNews = [
-      {
-        id: '1',
-        title: 'Welcome to Digital Public Works',
-        content: 'Thank you for joining our community mapping initiative. Your contributions help build better communities through accurate data collection.',
-        priority: 'HIGH',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin'
-      },
-      {
-        id: '2',
-        title: 'New Payment System Active',
-        content: 'We have updated our payment processing system. All earnings will now be processed faster with improved tracking.',
-        priority: 'MEDIUM',
-        isActive: true,
-        createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        createdBy: 'admin'
-      },
-      {
-        id: '3',
-        title: 'Quality Guidelines Reminder',
-        content: 'Please take your time when reviewing images. Higher accuracy scores lead to better earnings and help improve our community data quality.',
-        priority: 'LOW',
-        isActive: true,
-        createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        createdBy: 'admin'
-      }
-    ];
-
     return NextResponse.json({
-      success: true,
-      data: mockNews
-    });
+      success: false,
+      message: 'Database connection failed. Please reload the page.',
+    }, { status: 500 });
   }
 }

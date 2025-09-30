@@ -194,6 +194,119 @@ async function main() {
   ]);
   console.log('📰 Created sample news items');
 
+  // Create sample notices with proper targeting
+  const globalNotice1 = await prisma.notice.create({
+    data: {
+      title: 'Platform Update: Enhanced Quality Controls',
+      content: 'We have implemented new quality control measures to ensure the highest accuracy in community mapping data. Please take extra care when reviewing images, especially in areas with poor lighting or complex structures. Your attention to detail directly impacts community development planning and your bonus payments.',
+      priority: 'HIGH',
+      targetType: 'ALL',
+      createdBy: systemAdmin.id,
+      isActive: true
+    }
+  });
+
+  const globalNotice2 = await prisma.notice.create({
+    data: {
+      title: 'Payment System Upgrade Complete',
+      content: 'Our payment processing system has been successfully upgraded! All earnings will now be processed within 24 hours of task completion. You will receive SMS notifications when payments are sent to your M-Pesa account. Previous payment delays have been resolved.',
+      priority: 'MEDIUM',
+      targetType: 'ALL',
+      createdBy: systemAdmin.id,
+      isActive: true
+    }
+  });
+
+  const globalNotice3 = await prisma.notice.create({
+    data: {
+      title: 'Weekly Bonus Opportunity',
+      content: 'Complete 250+ tasks this week with 85% accuracy or higher to unlock a special KES 500 bonus! Track your progress in the dashboard and maintain high quality to maximize your earnings. Bonus payments will be processed on Friday.',
+      priority: 'LOW',
+      targetType: 'ALL',
+      createdBy: systemAdmin.id,
+      isActive: true
+    }
+  });
+
+  // Settlement-specific notices
+  const hurumaNotice = await prisma.notice.create({
+    data: {
+      title: 'Mji wa Huruma: Infrastructure Survey Priority',
+      content: 'Special focus needed for the upcoming infrastructure development project in Mji wa Huruma. Please pay close attention to water access points, drainage systems, and road conditions in your assigned areas. This data will support the Q1 2026 community development initiatives.',
+      priority: 'HIGH',
+      targetType: 'SETTLEMENT',
+      settlementId: settlements.find(s => s.name === 'Mji wa Huruma')?.id,
+      createdBy: settlementAdmin.id,
+      isActive: true
+    }
+  });
+
+  const kayoleNotice = await prisma.notice.create({
+    data: {
+      title: 'Kayole Soweto: Safety Protocol Update',
+      content: 'New safety guidelines are in effect for field work in Kayole Soweto. Please work in pairs when possible and check in with your supervisor every 2 hours. Safety equipment is available for collection at the local coordination center.',
+      priority: 'MEDIUM',
+      targetType: 'SETTLEMENT',
+      settlementId: settlements.find(s => s.name === 'Kayole Soweto')?.id,
+      createdBy: settlementAdmin.id,
+      isActive: true
+    }
+  });
+
+  console.log('📢 Created sample notices');
+
+  // Create some realistic notice reads
+  const worker1 = users.find(u => u.phone === '+254712345678');
+  const worker2 = users.find(u => u.phone === '+254723456789');
+  const worker3 = users.find(u => u.phone === '+254734567890');
+
+  if (worker1) {
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: globalNotice1.id,
+        userId: worker1.id
+      }
+    });
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: hurumaNotice.id,
+        userId: worker1.id
+      }
+    });
+  }
+
+  if (worker2) {
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: globalNotice1.id,
+        userId: worker2.id
+      }
+    });
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: globalNotice2.id,
+        userId: worker2.id
+      }
+    });
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: kayoleNotice.id,
+        userId: worker2.id
+      }
+    });
+  }
+
+  if (worker3) {
+    await prisma.noticeRead.create({
+      data: {
+        noticeId: globalNotice1.id,
+        userId: worker3.id
+      }
+    });
+  }
+
+  console.log('👁️ Created notice read tracking');
+
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📝 Sample credentials:');
   console.log('System Admin: +254701234567 (system-wide access)');

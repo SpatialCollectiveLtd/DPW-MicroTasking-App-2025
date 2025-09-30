@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-
-// Simplified auth options for this API route
-const authOptions = {
-  session: { strategy: 'jwt' as const },
-  secret: process.env.NEXTAUTH_SECRET,
-};
+import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {

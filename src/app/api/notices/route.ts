@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-// GET - Fetch notices for a user (using mock data for now)
+// GET - Fetch notices for a user based on their settlement and read status
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,50 +18,61 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeRead = searchParams.get('includeRead') === 'true';
 
-    // Mock data for development - replace with database queries when ready
-    const mockNotices = [
-      {
-        id: '1',
-        title: 'Welcome to DPW MicroTasking',
-        content: 'Thank you for joining our community mapping initiative. Your contributions help build better communities through accurate data collection. We appreciate your dedication to improving urban planning through technology.',
-        priority: 'HIGH',
-        targetType: 'ALL',
-        createdAt: new Date().toISOString(),
-        isRead: false
+    // Get user with settlement info
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { settlement: true }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Build where clause for notices
+    const whereClause = {
+      isActive: true,
+      OR: [
+        { targetType: 'ALL' },
+        { 
+          targetType: 'SETTLEMENT',
+          settlementId: user.settlementId 
+        }
+      ]
+    };
+
+    // Fetch notices with read status
+    const notices = await prisma.notice.findMany({
+      where: whereClause,
+      include: {
+        reads: {
+          where: { userId: session.user.id }
+        },
+        settlement: true
       },
-      {
-        id: '2',
-        title: 'Payment System Update',
-        content: 'We have updated our payment processing system. All earnings will now be processed faster with improved tracking. You can expect to see your payments reflected within 24 hours of task completion.',
-        priority: 'MEDIUM',
-        targetType: 'ALL',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        isRead: false
-      },
-      {
-        id: '3',
-        title: 'Settlement-Specific Instructions',
-        content: 'Please note the updated guidelines for your specific settlement area. Check the latest mapping requirements in your region. Quality control measures have been enhanced for better accuracy.',
-        priority: 'MEDIUM',
-        targetType: 'SETTLEMENT',
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
-        isRead: true
-      },
-      {
-        id: '4',
-        title: 'Quality Guidelines Reminder',
-        content: 'Please take your time when reviewing images. Higher accuracy scores lead to better earnings and help improve our community data quality. Remember to zoom in on images for better detail analysis.',
-        priority: 'LOW',
-        targetType: 'ALL',
-        createdAt: new Date(Date.now() - 259200000).toISOString(),
-        isRead: true
-      }
-    ];
+      orderBy: [
+        { priority: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    });
+
+    // Transform notices to include isRead status
+    const noticesWithReadStatus = notices.map(notice => ({
+      id: notice.id,
+      title: notice.title,
+      content: notice.content,
+      priority: notice.priority,
+      targetType: notice.targetType,
+      createdAt: notice.createdAt.toISOString(),
+      isRead: notice.reads.length > 0
+    }));
 
     // Filter based on includeRead parameter
     const filteredNotices = includeRead 
-      ? mockNotices 
-      : mockNotices.filter(notice => !notice.isRead);
+      ? noticesWithReadStatus 
+      : noticesWithReadStatus.filter(notice => !notice.isRead);
 
     return NextResponse.json({
       success: true,
@@ -68,15 +80,19 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching notices:', error);
+    console.error('Database connection error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch notices' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: 'Database connection failed. Please refresh the page and try again.',
+        needsReload: true 
+      },
+      { status: 503 }
     );
   }
 }
 
-// POST - Create a new notice (Admin only) - Mock implementation
+// POST - Create a new notice (Admin only)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -85,6 +101,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    });
+
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
@@ -99,18 +127,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mock created notice
-    const notice = {
-      id: Date.now().toString(),
-      title,
-      content,
-      priority: priority || 'MEDIUM',
-      targetType: targetType || 'ALL',
-      settlementId: targetType === 'SETTLEMENT' ? settlementId : null,
-      createdBy: session.user.id,
-      createdAt: new Date().toISOString(),
-      isActive: true
-    };
+    // Validate settlement ID if targeting specific settlement
+    if (targetType === 'SETTLEMENT' && !settlementId) {
+      return NextResponse.json(
+        { success: false, error: 'Settlement ID required for settlement-specific notices' },
+        { status: 400 }
+      );
+    }
+
+    const notice = await prisma.notice.create({
+      data: {
+        title,
+        content,
+        priority: priority || 'MEDIUM',
+        targetType: targetType || 'ALL',
+        settlementId: targetType === 'SETTLEMENT' ? settlementId : null,
+        createdBy: session.user.id
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -118,10 +152,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating notice:', error);
+    console.error('Database connection error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create notice' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: 'Database connection failed. Please refresh the page and try again.',
+        needsReload: true 
+      },
+      { status: 503 }
     );
   }
 }

@@ -62,88 +62,45 @@ export default function NoticesManagement() {
       return;
     }
 
-    // Mock data - replace with actual API call
-    const mockNotices: Notice[] = [
-      {
-        id: '1',
-        title: 'Platform Maintenance Scheduled',
-        content: 'We will be performing routine maintenance on the platform this Sunday from 2:00 AM to 4:00 AM EST. During this time, the platform may be temporarily unavailable.',
-        type: 'warning',
-        priority: 'high',
-        status: 'published',
-        targetAudience: 'all',
-        createdBy: 'System Admin',
-        createdDate: '2024-01-18',
-        publishedDate: '2024-01-18',
-        expiryDate: '2024-01-22',
-        readCount: 158,
-        totalRecipients: 245,
-        isSticky: true
-      },
-      {
-        id: '2',
-        title: 'New Campaign Available: Downtown Safety',
-        content: 'A new high-priority campaign "Downtown Safety Assessment" is now available. This campaign offers $2.50 per completed task and focuses on identifying safety hazards in downtown intersections.',
-        type: 'info',
-        priority: 'medium',
-        status: 'published',
-        targetAudience: 'workers',
-        createdBy: 'Campaign Manager',
-        createdDate: '2024-01-16',
-        publishedDate: '2024-01-16',
-        readCount: 89,
-        totalRecipients: 200,
-        isSticky: false
-      },
-      {
-        id: '3',
-        title: 'Payment Processing Update',
-        content: 'We have successfully processed all pending payments for the week ending January 14th. Payments have been sent to your preferred payment method and should reflect in your account within 2-3 business days.',
-        type: 'success',
-        priority: 'medium',
-        status: 'published',
-        targetAudience: 'workers',
-        createdBy: 'Finance Team',
-        createdDate: '2024-01-15',
-        publishedDate: '2024-01-15',
-        readCount: 134,
-        totalRecipients: 200,
-        isSticky: false
-      },
-      {
-        id: '4',
-        title: 'Security Enhancement Reminder',
-        content: 'Please ensure your account password is strong and unique. We recommend using a combination of uppercase, lowercase, numbers, and special characters. Two-factor authentication is available in your account settings.',
-        type: 'info',
-        priority: 'low',
-        status: 'draft',
-        targetAudience: 'all',
-        createdBy: 'Security Team',
-        createdDate: '2024-01-19',
-        readCount: 0,
-        totalRecipients: 245,
-        isSticky: false
-      },
-      {
-        id: '5',
-        title: 'Critical: Account Verification Required',
-        content: 'Due to new compliance requirements, all workers must verify their account information by January 25th. Unverified accounts will be temporarily suspended until verification is complete.',
-        type: 'urgent',
-        priority: 'high',
-        status: 'published',
-        targetAudience: 'workers',
-        createdBy: 'Compliance Team',
-        createdDate: '2024-01-12',
-        publishedDate: '2024-01-12',
-        expiryDate: '2024-01-25',
-        readCount: 167,
-        totalRecipients: 200,
-        isSticky: true
+    // Fetch notices from database API
+    const fetchNotices = async () => {
+      try {
+        const response = await fetch('/api/notices');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Transform database notices to match admin interface format
+          const transformedNotices: Notice[] = result.data.map((notice: any) => ({
+            id: notice.id,
+            title: notice.title,
+            content: notice.content,
+            type: notice.priority === 'HIGH' ? 'urgent' : notice.priority === 'MEDIUM' ? 'warning' : 'info',
+            priority: notice.priority.toLowerCase(),
+            status: notice.isActive ? 'published' : 'draft',
+            targetAudience: notice.targetType === 'ALL' ? 'all' : 'workers',
+            createdBy: 'Admin',
+            createdDate: new Date(notice.createdAt).toISOString().split('T')[0],
+            publishedDate: new Date(notice.createdAt).toISOString().split('T')[0],
+            expiryDate: null,
+            readCount: notice.readCount || 0,
+            totalRecipients: 0,
+            isSticky: notice.priority === 'HIGH'
+          }));
+          
+          setNotices(transformedNotices);
+        } else {
+          console.error('Failed to fetch notices:', result.message);
+          setNotices([]);
+        }
+      } catch (error) {
+        console.error('Error fetching notices:', error);
+        setNotices([]);
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
 
-    setNotices(mockNotices);
-    setIsLoading(false);
+    fetchNotices();
   }, [session, status, router]);
 
   const filteredNotices = notices.filter(notice => {

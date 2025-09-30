@@ -19,23 +19,3 @@ export const APP_CONFIG = {
     MIN_CONSENSUS_THRESHOLD: 0.6, // 60% agreement required
   },
 } as const;
-
-// Sample data for development
-export const SAMPLE_SETTLEMENTS = [
-  { id: '1', name: 'Mji wa Huruma', location: 'Nairobi' },
-  { id: '2', name: 'Kayole Soweto', location: 'Nairobi' },
-  { id: '3', name: 'Kariobangi', location: 'Machakos' },
-] as const;
-
-export const SAMPLE_QUESTIONS = [
-  'Do you see a public waste bin?',
-  'Is there visible street lighting in this image?',
-  'Is there evidence of informal dumping or uncollected trash?',
-] as const;
-
-export const SAMPLE_IMAGE_URLS = [
-  'https://upload.wikimedia.org/wikipedia/commons/a/a4/Warren_Street_tube_station_360_panorama.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/d/d4/Zurich_2015_view_from_Grossm%C3%BCnster_- panorama_view_2.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/8/87/Panoramica_Cattedrale_di_Siena.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/e/e6/Schloss_Nymphenburg_Steinerner_Saal_360-Grad-Panorama.jpg',
-] as const;

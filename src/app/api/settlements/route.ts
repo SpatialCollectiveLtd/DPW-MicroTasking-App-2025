@@ -21,17 +21,9 @@ export async function GET() {
     } as ApiResponse<Settlement[]>);
   } catch (error) {
     console.error('Failed to fetch settlements:', error);
-    
-    // Fallback to mock data for development when database is not accessible
-    const mockSettlements = [
-      { id: '1', name: 'Mji wa Huruma', location: 'Nairobi' },
-      { id: '2', name: 'Kayole Soweto', location: 'Nairobi' },
-      { id: '3', name: 'Kariobangi', location: 'Nairobi' },
-    ];
-
     return NextResponse.json({
-      success: true,
-      data: mockSettlements,
-    } as ApiResponse<Settlement[]>);
+      success: false,
+      message: 'Database connection failed. Please reload the page.',
+    }, { status: 500 });
   }
 }

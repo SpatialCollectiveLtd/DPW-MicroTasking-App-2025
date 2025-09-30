@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { 
   Users, 
   Settings, 
@@ -16,11 +17,63 @@ import {
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+interface StatItem {
+  title: string;
+  value: string;
+  change: string;
+  changeType: 'positive' | 'negative';
+  icon: string;
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (status === 'loading') {
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session || session.user?.role !== 'ADMIN') {
+      router.push('/login');
+      return;
+    }
+
+    // Fetch admin stats from database API
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/admin/stats');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setStats(result.data.stats);
+        } else {
+          console.error('Failed to fetch admin stats:', result.message);
+          // Fallback to empty stats with error indication
+          setStats([
+            { title: 'Active Workers', value: 'Error', change: 'Reload page', changeType: 'negative', icon: 'Users' },
+            { title: 'Total Campaigns', value: 'Error', change: 'Database issue', changeType: 'negative', icon: 'FileText' },
+            { title: 'Monthly Revenue', value: 'Error', change: 'Connection failed', changeType: 'negative', icon: 'DollarSign' },
+            { title: 'Completion Rate', value: 'Error', change: 'Retry needed', changeType: 'negative', icon: 'TrendingUp' }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        setStats([
+          { title: 'Active Workers', value: 'Error', change: 'Reload page', changeType: 'negative', icon: 'Users' },
+          { title: 'Total Campaigns', value: 'Error', change: 'Database issue', changeType: 'negative', icon: 'FileText' },
+          { title: 'Monthly Revenue', value: 'Error', change: 'Connection failed', changeType: 'negative', icon: 'DollarSign' },
+          { title: 'Completion Rate', value: 'Error', change: 'Retry needed', changeType: 'negative', icon: 'TrendingUp' }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [session, status, router]);
+
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EF4444]"></div>
@@ -32,36 +85,16 @@ export default function AdminDashboard() {
     return null;
   }
 
-  const stats = [
-    {
-      title: 'Active Workers',
-      value: '245',
-      change: '+12%',
-      changeType: 'positive' as const,
-      icon: Users
-    },
-    {
-      title: 'Total Campaigns',
-      value: '18',
-      change: '+2',
-      changeType: 'positive' as const,
-      icon: FileText
-    },
-    {
-      title: 'Monthly Revenue',
-      value: '$12,450',
-      change: '+8.2%',
-      changeType: 'positive' as const,
-      icon: DollarSign
-    },
-    {
-      title: 'Completion Rate',
-      value: '94.2%',
-      change: '+1.3%',
-      changeType: 'positive' as const,
-      icon: TrendingUp
+  // Helper function to get icon component by name
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Users': return Users;
+      case 'FileText': return FileText;
+      case 'DollarSign': return DollarSign;
+      case 'TrendingUp': return TrendingUp;
+      default: return Activity;
     }
-  ];
+  };
 
   const quickActions = [
     {
@@ -164,7 +197,10 @@ export default function AdminDashboard() {
                   <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
                 <div className="h-12 w-12 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <stat.icon className="h-6 w-6 text-gray-600" />
+                  {(() => {
+                    const IconComponent = getIconComponent(stat.icon);
+                    return <IconComponent className="h-6 w-6 text-gray-600" />;
+                  })()}
                 </div>
               </div>
               
@@ -209,26 +245,12 @@ export default function AdminDashboard() {
         {/* Recent Activity Preview */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {[
-              { action: 'New worker registered', user: 'Sarah Johnson', time: '2 minutes ago' },
-              { action: 'Campaign completed', campaign: 'Downtown Safety Assessment', time: '15 minutes ago' },
-              { action: 'Payment processed', amount: '$125.50', time: '1 hour ago' },
-              { action: 'New notice published', title: 'Platform Maintenance Schedule', time: '2 hours ago' }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 bg-[#EF4444] rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-xs text-gray-500">
-                      {activity.user || activity.campaign || activity.amount || activity.title}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-500">{activity.time}</span>
-              </div>
-            ))}
+          <div className="text-center py-8">
+            <div className="h-12 w-12 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-sm">Recent activity will appear here</p>
+            <p className="text-gray-400 text-xs mt-1">Activity tracking coming soon</p>
           </div>
           
           <button 
